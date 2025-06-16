@@ -7,9 +7,9 @@
 struct flanterm_context *ftCtx;
 
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 0
 #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 0
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 0
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
@@ -18,20 +18,30 @@ struct flanterm_context *ftCtx;
 #define NANOPRINTF_IMPLEMENTATION
 #include <inc/io/nanoprintf.hpp>
 
+char buf[512];
+int idx = 0;
+
 void setFtCtx(struct flanterm_context *flantermCtx) {
     ftCtx = flantermCtx;
 }
 
-void kprintf(char *string, ...)
-{
-    char buf[256];
+void putchar(int ch, void *ctx) {
+    char c = ch;
+    buf[idx] = c;
+    idx++;
+}
 
+void kprintf(const char *string, ...)
+{
     std::va_list arg;
     va_start(arg, string);
 
-    npf_snprintf(buf, sizeof(buf), string, arg);
+    npf_vpprintf(putchar, nullptr, string, arg);
 
-    flanterm_write(ftCtx, string, strlen(string));
+    flanterm_write(ftCtx, buf, strlen(buf));
     
     va_end(arg);
+    // Make sure to clear the buffer
+    memset(buf, 0, sizeof(buf));
+    idx = 0;
 }

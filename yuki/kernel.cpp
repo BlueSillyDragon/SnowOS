@@ -139,16 +139,8 @@ extern "C" void kernelMain()
 
     setFtCtx(ftCtx);
 
-    kprintf("Hello world!\n");
-
-    /*kernTerminal.termInit(framebuffer, KRNL_WHITE, KRNL_DARK_GREY);
-    kernTerminal.clearScreen();
-
-    kernTerminal.termPrint(kernel_logo);
-    kernTerminal.termPrint("\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
-
-    initGdt();
-    initIdt();*/
+    kprintf(kernel_logo);
+    kprintf("\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
 
     // We're done, just hang...
     hcf();
