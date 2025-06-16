@@ -3,6 +3,7 @@
 #include <inc/io/terminal.hpp>
 #include <inc/io/kprintf.hpp>
 #include <inc/klibc/string.hpp>
+#include <inc/io/serial.hpp>
 
 struct flanterm_context *ftCtx;
 
@@ -29,6 +30,7 @@ void putchar(int ch, void *ctx) {
     char c = ch;
     buf[idx] = c;
     idx++;
+    writeSerial(c);
 }
 
 void kprintf(INFO info, const char *string, ...)
@@ -40,18 +42,23 @@ void kprintf(INFO info, const char *string, ...)
         switch (info) {
             case OK:
                 flanterm_write(ftCtx, "[ \033[92mOK\033[0m ] ", sizeof("[ \033[92mOK\033[0m ] "));
+                stringToSerial("[ \033[92mOK\033[0m ] ");
                 break;
             case ERROR:
                 flanterm_write(ftCtx, "[ \033[91mError\033[0m ] ", sizeof("[ \033[91mError\033[0m ] "));
+                stringToSerial("[ \033[91mError\033[0m ] ");
                 break;
             case PMM:
                 flanterm_write(ftCtx, "[ \033[94mPmm\033[0m ] ", sizeof("[ \033[94mPmm\033[0m ] "));
+                stringToSerial("[ \033[94mPmm\033[0m ] ");
                 break;
             case VMM:
                 flanterm_write(ftCtx, "[ \033[95mVmm\033[0m ] ", sizeof("[ \033[95mVmm\033[0m ] "));
+                stringToSerial("[ \033[95mVmm\033[0m ] ");
                 break;
             case SCHEDULER:
                 flanterm_write(ftCtx, "[ \033[93mScheduler\033[0m ] ", sizeof("[ \033[93mScheduler\033[0m ] "));
+                stringToSerial("[ \033[93mScheduler\033[0m ] ");
                 break;
         }
     }
