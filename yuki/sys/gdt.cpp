@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <inc/io/terminal.hpp>
+#include <inc/io/kprintf.hpp>
 #include <inc/sys/gdt.hpp>
 
 extern "C" void reloadSegs(void);
@@ -23,4 +23,5 @@ void initGdt()
     // Load the GDT and reload segment registers
     __asm__ volatile ("lgdt %0" :: "m"(gdtr));
     reloadSegs();
+    kprintf(OK, "GDT Initialized!\n");
 }

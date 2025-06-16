@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <inc/io/terminal.hpp>
+#include <inc/io/kprintf.hpp>
 
 char *panicArt = "   ____________    _______________________________\n"
 "  /            \\   |                              |\n"
@@ -23,13 +23,13 @@ extern "C" void interruptHandler(void);
 extern "C" void interruptHandler() {
     __asm__ volatile ("cli");
 
-    //kernTerminal.termPrint("\nKERNEL PANIC!\nA Fatal Error occured and the kernel can no longer continue!\n");
-    //kernTerminal.termPrint(panicArt);
+    kprintf(NONE, "\nKERNEL PANIC!\nA Fatal Error occured and the kernel can no longer continue!\n");
+    kprintf(NONE, panicArt);
 
     __asm__ volatile ("hlt");
 }
 
 extern "C" void syscallHandler() {
-    //kernTerminal.termPrint("\nA syscall has been invoked!\n");
+    kprintf(NONE, "\nA syscall has been invoked!\n");
     return;
 }

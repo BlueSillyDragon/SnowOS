@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <limine.h>
 #include <cstdint>
+#include <inc/io/kprintf.hpp>
 #include <inc/klibc/string.hpp>
 #include <inc/mm/pmm.hpp>
 
@@ -32,7 +33,7 @@ pmmNode head = {.next = nullptr};
 
 void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
 {
-    //kernTerminal.kinfo(PMM, "Initialzing PMM...\n");
+    kprintf(PMM, "Building FreeList...\n");
 
     uint64_t nop = 0;
     pmmNode *currentNode = &head;
@@ -57,21 +58,20 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
     }
     if (((nop * 4) / 1024) < 400)   // Not all of RAM is usable, give some account for this
     {
-        //kernTerminal.kerror("Please run SnowOS with atleast 512MB of RAM!\n");
+        kprintf(ERROR, "Please run SnowOS with atleast 512MB of RAM!\n");
         __asm__ volatile (" hlt ");
     }
 
-    /*kernTerminal.kinfo(PMM, "SnowOS has ");
-    kernTerminal.termPrint("%dGB of memory available\n", ((nop * 4) / 1024) / 1024);
-    kernTerminal.kinfo(PMM, "Usable Pages: ");
-    kernTerminal.termPrint("%d\n", nop);*/
+    kprintf(PMM, "Finished building FreeList!\n");
+    kprintf(PMM, "SnowOS has %dGB of memory available\n", ((nop * 4) / 1024) / 1024);
+    kprintf(PMM, "Usable Pages: %d\n", nop);
 }
 
 uint64_t pmmAlloc()
 {
     if (head.next == nullptr)
     {
-        //kernTerminal.kerror("Out of Memory!\n");
+        kprintf(ERROR, "Out of Memory!\n");
         return 0x0;
     }
     pmmNode *returnPage = head.next;

@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <inc/io/terminal.hpp>
+#include <inc/io/kprintf.hpp>
 #include <inc/sys/idt.hpp>
 
 extern void* isr_stub_table[];
@@ -31,4 +31,5 @@ void initIdt()
     idtSetDescriptor(0x60, isr_stub_table[32], 0x8e);
 
     __asm__ volatile ("lidt %0" :: "m"(idtr));
+    kprintf(OK, "IDT Initialized!\n");
 }

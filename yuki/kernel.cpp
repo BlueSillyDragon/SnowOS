@@ -142,11 +142,9 @@ extern "C" void kernelMain()
     kprintf(NONE, kernel_logo);
     kprintf(NONE, "\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
 
-    kprintf(OK, "This is an OK message!\n");
-    kprintf(ERROR, "This is an Error message!\n");
-    kprintf(PMM, "This is a Pmm message!\n");
-    kprintf(VMM, "This is a Vmm message!\n");
-    kprintf(SCHEDULER, "This is a Scheduler message!\n");
+    initGdt();
+    initIdt();
+    initPmm(memmap_request.response, hhdm);
 
     // We're done, just hang...
     hcf();
