@@ -1,7 +1,4 @@
-#include <inc/io/terminal.hpp>
 #include <stdint.h>
-
-extern "C" Terminal kernTerminal;
 
 struct tu_source_location
 {

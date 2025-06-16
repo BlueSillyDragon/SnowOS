@@ -1,8 +1,6 @@
 #include <cstdint>
 #include <inc/io/terminal.hpp>
 
-extern Terminal kernTerminal;
-
 char *panicArt = "   ____________    _______________________________\n"
 "  /            \\   |                              |\n"
 " /              \\  / Whoops! Kernel died...       |\n"
@@ -25,13 +23,13 @@ extern "C" void interruptHandler(void);
 extern "C" void interruptHandler() {
     __asm__ volatile ("cli");
 
-    kernTerminal.termPrint("\nKERNEL PANIC!\nA Fatal Error occured and the kernel can no longer continue!\n");
-    kernTerminal.termPrint(panicArt);
+    //kernTerminal.termPrint("\nKERNEL PANIC!\nA Fatal Error occured and the kernel can no longer continue!\n");
+    //kernTerminal.termPrint(panicArt);
 
     __asm__ volatile ("hlt");
 }
 
 extern "C" void syscallHandler() {
-    kernTerminal.termPrint("\nA syscall has been invoked!\n");
+    //kernTerminal.termPrint("\nA syscall has been invoked!\n");
     return;
 }

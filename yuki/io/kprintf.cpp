@@ -1,8 +1,10 @@
 #include <cstdarg>
+#include <flanterm.h>
 #include <inc/io/terminal.hpp>
 #include <inc/io/kprintf.hpp>
+#include <inc/klibc/string.hpp>
 
-extern "C" Terminal kernTerminal;
+struct flanterm_context *ftCtx;
 
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
@@ -16,6 +18,10 @@ extern "C" Terminal kernTerminal;
 #define NANOPRINTF_IMPLEMENTATION
 #include <inc/io/nanoprintf.hpp>
 
+void setFtCtx(struct flanterm_context *flantermCtx) {
+    ftCtx = flantermCtx;
+}
+
 void kprintf(char *string, ...)
 {
     char buf[256];
@@ -24,7 +30,8 @@ void kprintf(char *string, ...)
     va_start(arg, string);
 
     npf_snprintf(buf, sizeof(buf), string, arg);
-    kernTerminal.termPrint(buf);
+
+    flanterm_write(ftCtx, string, strlen(string));
     
     va_end(arg);
 }

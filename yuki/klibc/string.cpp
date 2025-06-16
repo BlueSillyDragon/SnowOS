@@ -1,8 +1,9 @@
+#include <cstddef>
 #include <inc/klibc/string.hpp>
 
 extern "C" {
 
-    void *KLib::memcpy(void *__restrict dest, const void *__restrict src, std::size_t n) {
+    void *memcpy(void *__restrict dest, const void *__restrict src, std::size_t n) {
         std::uint8_t *__restrict pdest = static_cast<std::uint8_t *__restrict>(dest);
         const std::uint8_t *__restrict psrc = static_cast<const std::uint8_t *__restrict>(src);
     
@@ -13,7 +14,7 @@ extern "C" {
         return dest;
     }
     
-    void *KLib::memset(void *s, int c, std::size_t n) {
+    void *memset(void *s, int c, std::size_t n) {
         std::uint8_t *p = static_cast<std::uint8_t *>(s);
     
         for (std::size_t i = 0; i < n; i++) {
@@ -23,7 +24,7 @@ extern "C" {
         return s;
     }
     
-    void *KLib::memmove(void *dest, const void *src, std::size_t n) {
+    void *memmove(void *dest, const void *src, std::size_t n) {
         std::uint8_t *pdest = static_cast<std::uint8_t *>(dest);
         const std::uint8_t *psrc = static_cast<const std::uint8_t *>(src);
     
@@ -40,7 +41,7 @@ extern "C" {
         return dest;
     }
     
-    int KLib::memcmp(const void *s1, const void *s2, std::size_t n) {
+    int memcmp(const void *s1, const void *s2, std::size_t n) {
         const std::uint8_t *p1 = static_cast<const std::uint8_t *>(s1);
         const std::uint8_t *p2 = static_cast<const std::uint8_t *>(s2);
     
@@ -53,3 +54,11 @@ extern "C" {
         return 0;
     }
 }
+
+size_t strlen(char *string) {
+        size_t length = 0;
+        for (int i = 0; string[i] != '\0'; i++) {
+            length++;
+        } length++;
+        return length;
+    }

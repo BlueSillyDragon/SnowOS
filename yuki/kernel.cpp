@@ -1,10 +1,14 @@
+#include "inc/io/kprintf.hpp"
+#include "inc/io/terminal.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
 #include <inc/klibc/string.hpp>
-#include <inc/io/terminal.hpp>
+#include <flanterm.h>
+#include <flanterm_backends/fb.h>
 #include <inc/io/serial.hpp>
 #include <inc/io/krnl_colors.hpp>
+#include <inc/io/krnl_font.hpp>
 #include <inc/io/logo.hpp>
 #include <inc/sys/gdt.hpp>
 #include <inc/sys/idt.hpp>
@@ -94,9 +98,9 @@ extern "C" {
 extern void (*__init_array[])();
 extern void (*__init_array_end[])();
 
-Terminal kernTerminal;
-
 uint64_t hhdm;
+
+uint32_t testColor = 0x23272E;
 
 extern "C" void kernelMain()
 {
@@ -131,26 +135,20 @@ extern "C" void kernelMain()
     // Fetch the first framebuffer.
     limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    kernTerminal.termInit(framebuffer, KRNL_WHITE, KRNL_DARK_GREY);
+    struct flanterm_context *ftCtx = termInit(framebuffer, KRNL_WHITE, KRNL_DARK_GREY);
+
+    setFtCtx(ftCtx);
+
+    kprintf("Hello world!\n");
+
+    /*kernTerminal.termInit(framebuffer, KRNL_WHITE, KRNL_DARK_GREY);
     kernTerminal.clearScreen();
 
     kernTerminal.termPrint(kernel_logo);
     kernTerminal.termPrint("\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
 
     initGdt();
-    initIdt();
-
-    // Ensure we have a Memory Map
-    if (memmap_request.response == nullptr)
-    {
-        hcf();
-    }
-
-    limine_memmap_response *memoryMap = memmap_request.response;
-
-    initPmm(memoryMap, hhdm);
-
-    std::uint64_t test = pmmAlloc();
+    initIdt();*/
 
     // We're done, just hang...
     hcf();

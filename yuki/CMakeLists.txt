@@ -3,7 +3,6 @@ set(SOURCES "kernel.cpp"
 "io/kprintf.cpp"
 "io/serial.cpp"
 "klibc/string.cpp"
-"tinyubsan.cpp"
 "sys/gdt.cpp"
 "sys/idt.cpp"
 "sys/interrupts.cpp"
@@ -13,12 +12,13 @@ set(SOURCES "kernel.cpp"
 "mm/pmm.cpp"
 "mm/vmm.cpp")
 
-add_executable(yuki ${SOURCES})
+add_executable(yuki ${SOURCES} flanterm/src/flanterm.c flanterm/src/flanterm_backends/fb.c)
 
 target_include_directories(yuki
     PRIVATE freestnd-c-hdrs/x86_64/include
     PRIVATE freestnd-cxx-hdrs/x86_64/include
     PRIVATE ../yuki
+    PRIVATE flanterm/src
 )
 
 target_compile_options(yuki
@@ -26,8 +26,6 @@ PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-ggdb>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-target x86_64-unknown-none>
-PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=undefined>
-PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-builtin-declaration-mismatch>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O2>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc>

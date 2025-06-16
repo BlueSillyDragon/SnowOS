@@ -4,8 +4,6 @@
 
 extern "C" void reloadSegs(void);
 
-extern Terminal kernTerminal;
-
 gdtr_t gdtr;
 gdt_t gdt;
 
@@ -25,6 +23,4 @@ void initGdt()
     // Load the GDT and reload segment registers
     __asm__ volatile ("lgdt %0" :: "m"(gdtr));
     reloadSegs();
-
-    kernTerminal.ksuccess("GDT Initialized!\n");
 }

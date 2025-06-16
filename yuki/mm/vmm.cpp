@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <limine.h>
-#include <inc/io/terminal.hpp>
 #include <inc/klibc/string.hpp>
 #include <inc/io/serial.hpp>
 #include <inc/mm/pmm.hpp>
@@ -19,8 +18,6 @@ constexpr uint64_t pteAddress = 0x0000fffffffff000;
 #define PD_ID(virt) (((virt) >> 21) & 0x1FF)
 #define PT_ID(virt) (((virt) >> 12) & 0x1FF)
 
-extern "C" Terminal kernTerminal;
-
 pagemap_t pagemap;
 
 uint64_t hhdmOffset;
@@ -29,10 +26,10 @@ uint64_t kernelVirt = 0xffffffff80000000;
 
 void initVmm(limine_memmap_response *memoryMap, std::uint64_t hhdm)
 {
-    kernTerminal.kinfo(VMM, "Initializing VMM...\n");
+    //kernTerminal.kinfo(VMM, "Initializing VMM...\n");
     hhdmOffset = hhdm;
     pagemap.topLevel = pmmAlloc();
-    KLib::memset(reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdm), 0x0, 0x1000);
+    memset(reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdm), 0x0, 0x1000);
 
     uint64_t oldCr3 = 0;
 
@@ -48,7 +45,7 @@ void initVmm(limine_memmap_response *memoryMap, std::uint64_t hhdm)
 
     __asm__ volatile ("mov %0, %%cr3" :: "r"(pagemap.topLevel) : "memory");
 
-    kernTerminal.kinfo(VMM, "VMM Initialized!\n");
+    //kernTerminal.kinfo(VMM, "VMM Initialized!\n");
 }
 
 uint64_t createPte(uint64_t physicalAddr, uint64_t flags)
@@ -82,7 +79,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
 {
     if (virtualAddr % 0x1000 != 0 || physicalAddr % 0x1000 != 0)
     {
-        kernTerminal.kerror("Attempted to map a virtual address or physical address that was not aligned to 4KB!\n");
+        //kernTerminal.kerror("Attempted to map a virtual address or physical address that was not aligned to 4KB!\n");
         __asm__ volatile (" hlt ");
     }
 
@@ -94,21 +91,21 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
         pml4[PML4_ID(virtualAddr)] = createPte(pmmAlloc(), 0);
     }
     pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
-    KLib::memset(pdpt, 0x0, 0x1000);
+    memset(pdpt, 0x0, 0x1000);
 
     if (!(pdpt[PDPT_ID(virtualAddr)] & ptePresent))
     {
         pdpt[PDPT_ID(virtualAddr)] = createPte(pmmAlloc(), 0);
     }
     pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
-    KLib::memset(pd, 0x0, 0x1000);
+    memset(pd, 0x0, 0x1000);
 
     if (!(pd[PD_ID(virtualAddr)] & ptePresent))
     {
         pd[PD_ID(virtualAddr)] = createPte(pmmAlloc(), 0);
     }
     pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
-    KLib::memset(pt, 0x0, 0x1000);
+    memset(pt, 0x0, 0x1000);
     pt[PT_ID(virtualAddr)] = createPte(physicalAddr, flags);
 }
 
@@ -116,7 +113,7 @@ void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uin
 {
     if (virtualStart % 0x1000 != 0 || physicalStart % 0x1000 != 0 || count % 0x1000 != 0)
     {
-        kernTerminal.kerror("Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
+        //kernTerminal.kerror("Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
         __asm__ volatile (" hlt ");
     }
 

@@ -10,6 +10,7 @@ snowboot/efi/bin-x86_64
 snowboot/efi/obj-x86_64
 yuki/freestnd-c-hdrs
 yuki/freestnd-cxx-hdrs
+yuki/flanterm
 yuki/limine.h
 limine
 build

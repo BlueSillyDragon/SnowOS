@@ -2,8 +2,6 @@
 #include <inc/io/terminal.hpp>
 #include <inc/sys/idt.hpp>
 
-extern Terminal kernTerminal;
-
 extern void* isr_stub_table[];
 
 idtr_t idtr;
@@ -33,6 +31,4 @@ void initIdt()
     idtSetDescriptor(0x60, isr_stub_table[32], 0x8e);
 
     __asm__ volatile ("lidt %0" :: "m"(idtr));
-
-    kernTerminal.ksuccess("IDT Initialized!\n");
 }
