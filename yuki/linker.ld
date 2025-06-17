@@ -34,14 +34,20 @@ SECTIONS
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     .text : {
+        _kernelCodeStart = .;
         *(.text .text.*)
+        . = ALIGN(CONSTANT(MAXPAGESIZE));
+        _kernelCodeEnd = .;
     } :text
 
     /* Move to the next memory page for .rodata */
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     .rodata : {
+        _kernelRodataStart = .;
         *(.rodata .rodata.*)
+        . = ALIGN(CONSTANT(MAXPAGESIZE));
+        _kernelRodataEnd = .;
     } :rodata
 
     /* C++ is a language that allows for global constructors. In order to obtain the */
@@ -68,6 +74,8 @@ SECTIONS
         *(.bss .bss.*)
         *(COMMON)
     } :data
+
+    _kernelVirtualEnd = ALIGN(CONSTANT(MAXPAGESIZE));
 
     /* Discard .note.* and .eh_frame* since they may cause issues on some hosts. */
     /DISCARD/ : {

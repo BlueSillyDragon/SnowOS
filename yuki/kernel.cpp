@@ -58,6 +58,13 @@ volatile limine_hhdm_request hhdm_request = {
     .response = nullptr
 };
 
+__attribute__((used, section(".limine_requests")))
+volatile limine_kernel_address_request executable_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
 }
 
 // Finally, define the start and end markers for the Limine requests.
@@ -145,7 +152,7 @@ extern "C" void kernelMain()
     initGdt();
     initIdt();
     initPmm(memmap_request.response, hhdm);
-    initVmm(memmap_request.response, hhdm);
+    initVmm(memmap_request.response, executable_request.response, hhdm);
 
     // We're done, just hang...
     hcf();

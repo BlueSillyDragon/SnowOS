@@ -1,7 +1,7 @@
-#include "inc/io/kprintf.hpp"
 #include <cstdint>
 #include <limine.h>
 #include <inc/klibc/string.hpp>
+#include <inc/io/kprintf.hpp>
 #include <inc/io/serial.hpp>
 #include <inc/mm/pmm.hpp>
 #include <inc/mm/vmm.hpp>
@@ -19,13 +19,19 @@ constexpr uint64_t pteAddress = 0x0000fffffffff000;
 #define PD_ID(virt) (((virt) >> 21) & 0x1FF)
 #define PT_ID(virt) (((virt) >> 12) & 0x1FF)
 
+extern uint64_t _kernelCodeStart;
+extern uint64_t _kernelCodeEnd;
+extern uint64_t _kernelRodataStart;
+extern uint64_t _kernelRodataEnd;
+extern uint64_t _kernelVirtualEnd;
+
 pagemap_t pagemap;
 
 uint64_t hhdmOffset;
 
 uint64_t kernelVirt = 0xffffffff80000000;
 
-void initVmm(limine_memmap_response *memoryMap, std::uint64_t hhdm)
+void initVmm(limine_memmap_response *memoryMap, limine_kernel_address_response *kernelAddr, std::uint64_t hhdm)
 {
     kprintf(VMM, "Initializing VMM...\n");
     hhdmOffset = hhdm;
@@ -40,15 +46,30 @@ void initVmm(limine_memmap_response *memoryMap, std::uint64_t hhdm)
 
     for(uint64_t i = 0; i < memoryMap->entry_count; i++)
     {
-        if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE)
-        {
-            mapPages(memoryMap->entries[i]->base + hhdm, memoryMap->entries[i]->base, 0x3, memoryMap->entries[i]->length);
+        if (memoryMap->entries[i]->type == LIMINE_MEMMAP_BAD_MEMORY ||
+            memoryMap->entries[i]->type == LIMINE_MEMMAP_RESERVED ||
+            memoryMap->entries[i]->type == LIMINE_MEMMAP_ACPI_NVS) {
+            continue;
         }
+
+        uint64_t flags = 0x3;
+
+        if (memoryMap->entries[i]->type == LIMINE_MEMMAP_FRAMEBUFFER) {
+            flags |= ptePwt;
+        }
+        
+        mapPages(memoryMap->entries[i]->base + hhdm, memoryMap->entries[i]->base, flags, memoryMap->entries[i]->length);
     }
 
     kprintf(VMM, "Remapping Yuki...\n");
 
-    __asm__ __volatile__ (" hlt ");
+    for (uint64_t i = 0; (kernelAddr->virtual_base + i) < (uint64_t)&_kernelVirtualEnd; i += 0x1000) {
+        if (i >= (uint64_t)&_kernelCodeStart && i <= (uint64_t)&_kernelRodataEnd) {
+            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, 0x1);
+        } else {
+            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, 0x3);
+        }
+    }
 
     __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(pagemap.topLevel) : "memory");
 
