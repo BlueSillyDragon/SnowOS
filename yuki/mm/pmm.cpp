@@ -41,20 +41,19 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
     pmmNode *currentNode = &head;
     pmmNode *nextNode = nullptr;
     hhdm_offset = hhdm;
+    bool endOfMem = true;
 
     for(uint64_t i = 0; i < memoryMap->entry_count; i++)
     {
         if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE)
         {
             if (memoryMap->entries[i]->base == 0x0000) continue;
-
-            bool endOfMem = true;
             nop += (memoryMap->entries[i]->length / 0x1000);
 
             // Find the next free area
-            for (uint64_t j = i; j < memoryMap->entry_count; j++) {
-                if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE) {
-                    nextNode = reinterpret_cast<pmmNode *>(memoryMap->entries[i]->base + hhdm);
+            for (uint64_t j = i + 1; j < memoryMap->entry_count; j++) {
+                if (memoryMap->entries[j]->type == LIMINE_MEMMAP_USABLE) {
+                    nextNode = reinterpret_cast<pmmNode *>(memoryMap->entries[j]->base + hhdm);
                     memset(nextNode, 0x0, 0x1000);
                     endOfMem = false;
                     break;
@@ -64,12 +63,13 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
             if (endOfMem) {
                 currentNode->next = nullptr;
             } else {
-                currentNode->next = reinterpret_cast<pmmNode *>(nextNode);
+                currentNode->next = nextNode;
                 currentNode->start = memoryMap->entries[i]->base;
                 currentNode->length = memoryMap->entries[i]->length;
                 currentNode = nextNode;
             }
         }
+        endOfMem = true;
     }
     if (((nop * 4) / 1024) < 400)   // Not all of RAM is usable, give some account for this
     {
@@ -84,10 +84,13 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
 
 uint64_t pmmAlloc()
 {
-    if (head.start == (head.length + 0x1000) && head.next == nullptr)
+    if (head.start >= (head.length)) // TODO: This is a temporary fix
     {
-        kprintf(ERROR, "Out of Memory!\n");
-        return 0x0;
+        if (head.next == nullptr) {
+            kprintf(ERROR, "Out of Memory!\n");
+            return 0x0;
+        }
+        head = *head.next;
     }
     uint64_t returnPage = head.start;
     head.start += 0x1000;

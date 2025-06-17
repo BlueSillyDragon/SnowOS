@@ -36,13 +36,19 @@ void initVmm(limine_memmap_response *memoryMap, std::uint64_t hhdm)
 
     __asm__ __volatile__ ("mov %%cr3, %%rax; mov %%rax, %0" : "=a"(oldCr3));
 
-    for (uint64_t i = 0; i < 512; i++)
+    kprintf(VMM, "Mapping higher-half direct map...\n");
+
+    for(uint64_t i = 0; i < memoryMap->entry_count; i++)
     {
-        if (reinterpret_cast<uint64_t *>(oldCr3 + hhdm)[i] & ptePresent)
+        if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE)
         {
-            reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdm)[i] = reinterpret_cast<uint64_t *>(oldCr3 + hhdm)[i];
+            mapPages(memoryMap->entries[i]->base + hhdm, memoryMap->entries[i]->base, 0x3, memoryMap->entries[i]->length);
         }
     }
+
+    kprintf(VMM, "Remapping Yuki...\n");
+
+    __asm__ __volatile__ (" hlt ");
 
     __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(pagemap.topLevel) : "memory");
 
@@ -120,19 +126,18 @@ void unmapPage(uint64_t virtualAddr) {
     uint64_t *pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     pt[PT_ID(virtualAddr)] = 0;
-    __asm__ volatile (" invlpg (%0) " :: "a"(virtualAddr));
+    __asm__ __volatile__ (" invlpg (%0) " :: "a"(virtualAddr));
 }
 
 void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uint64_t count)
 {
     if (virtualStart % 0x1000 != 0 || physicalStart % 0x1000 != 0 || count % 0x1000 != 0)
     {
-        //kernTerminal.kerror("Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
+        kprintf(ERROR, "Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
         __asm__ volatile (" hlt ");
     }
 
-    for (uint64_t i = 0; i < count; ) {
+    for (uint64_t i = 0; i < count; i += 0x1000) {
         mapPage(virtualStart + i, physicalStart + i, flags);
-        i += 0x1000;
     }
 }
