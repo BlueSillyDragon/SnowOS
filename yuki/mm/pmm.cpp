@@ -27,6 +27,8 @@ char *memTypeToString(std::uint64_t memType)
 }
 
 struct pmmNode {
+    uint64_t start;
+    uint64_t length;
     pmmNode *next;
 } __attribute__((packed));
 pmmNode head = {.next = nullptr};
@@ -37,21 +39,34 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
 
     uint64_t nop = 0;
     pmmNode *currentNode = &head;
+    pmmNode *nextNode = nullptr;
     hhdm_offset = hhdm;
 
     for(uint64_t i = 0; i < memoryMap->entry_count; i++)
     {
-
         if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE)
         {
+            if (memoryMap->entries[i]->base == 0x0000) continue;
+
+            bool endOfMem = true;
             nop += (memoryMap->entries[i]->length / 0x1000);
 
-            // Loop through all pages in memory area, and link them together
-            for (uint64_t j = 0; j < memoryMap->entries[i]->length; j += 0x1000)
-            {
-                pmmNode *nextNode = reinterpret_cast<pmmNode *>(memoryMap->entries[i]->base + j + hhdm);
-                memset(nextNode, 0x0, 0x1000);
+            // Find the next free area
+            for (uint64_t j = i; j < memoryMap->entry_count; j++) {
+                if (memoryMap->entries[i]->type == LIMINE_MEMMAP_USABLE) {
+                    nextNode = reinterpret_cast<pmmNode *>(memoryMap->entries[i]->base + hhdm);
+                    memset(nextNode, 0x0, 0x1000);
+                    endOfMem = false;
+                    break;
+                }
+            }
+
+            if (endOfMem) {
+                currentNode->next = nullptr;
+            } else {
                 currentNode->next = reinterpret_cast<pmmNode *>(nextNode);
+                currentNode->start = memoryMap->entries[i]->base;
+                currentNode->length = memoryMap->entries[i]->length;
                 currentNode = nextNode;
             }
         }
@@ -65,6 +80,7 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
     kprintf(PMM, "Finished building FreeList!\n");
     kprintf(PMM, "SnowOS has %dGB of memory available\n", ((nop * 4) / 1024) / 1024);
     kprintf(PMM, "Usable Pages: %d\n", nop);
+    kprintf(PMM, "First free memory region starts at 0x%x with a length of 0x%x\n", head.start, head.length);
 }
 
 uint64_t pmmAlloc()
@@ -74,11 +90,11 @@ uint64_t pmmAlloc()
         kprintf(ERROR, "Out of Memory!\n");
         return 0x0;
     }
-    pmmNode *returnPage = head.next;
-    head.next = returnPage->next;
-    memset(returnPage, 0x0, 0x1000);
+    uint64_t returnPage = head.start;
+    head.start += 0x1000;
+    kprintf(PMM, "Next free page is 0x%x\n", head.start);
 
-    return reinterpret_cast<uint64_t>(returnPage) - hhdm_offset;
+    return returnPage;
 }
 
 void pmmFree(uint64_t page)
