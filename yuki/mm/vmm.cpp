@@ -91,7 +91,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
     {
         uint64_t lvlAddress = pmmAlloc();
         memset(reinterpret_cast<uint64_t *>(lvlAddress + hhdmOffset), 0, 0x1000);
-        pml4[PML4_ID(virtualAddr)] = createPte(lvlAddress, 0);
+        pml4[PML4_ID(virtualAddr)] = createPte(lvlAddress, flags);
     }
     pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
 
@@ -99,7 +99,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
     {
         uint64_t lvlAddress = pmmAlloc();
         memset(reinterpret_cast<uint64_t *>(lvlAddress + hhdmOffset), 0, 0x1000);
-        pdpt[PDPT_ID(virtualAddr)] = createPte(lvlAddress, 0);
+        pdpt[PDPT_ID(virtualAddr)] = createPte(lvlAddress, flags);
     }
     pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
 
@@ -107,7 +107,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
     {
         uint64_t lvlAddress = pmmAlloc();
         memset(reinterpret_cast<uint64_t *>(lvlAddress + hhdmOffset), 0, 0x1000);
-        pd[PD_ID(virtualAddr)] = createPte(lvlAddress, 0);
+        pd[PD_ID(virtualAddr)] = createPte(lvlAddress, flags);
     }
     pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     pt[PT_ID(virtualAddr)] = createPte(physicalAddr, flags);
