@@ -97,13 +97,11 @@ uint64_t pmmAlloc()
 
 void pmmFree(uint64_t page)
 {
-    if (page != (head.start - 0x1000)) {
-        pmmNode *newNode = reinterpret_cast<pmmNode *>(page + hhdm_offset);
-        memset(newNode, 0, 0x1000);
-        newNode->next = &head;
-        head = *newNode;
-        kprintf(PMM, "New freelist entry created!\n");
-    } else {
-        head.start -= 0x1000;
-    }
+    pmmNode *newNode = reinterpret_cast<pmmNode *>(page + hhdm_offset);
+    memset(newNode, 0, 0x1000);
+    newNode->next = &head;
+    newNode->start = page;
+    newNode->length = 0x1000;
+    head = *newNode;
+    kprintf(PMM, "New freelist entry created!\n");
 }
