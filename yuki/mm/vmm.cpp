@@ -111,7 +111,16 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
     }
     pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     pt[PT_ID(virtualAddr)] = createPte(physicalAddr, flags);
-    kprintf(VMM, "Entry is: 0x%x\n", pt[PT_ID(virtualAddr)]);
+}
+
+void unmapPage(uint64_t virtualAddr) {
+    kprintf(VMM, "Unmapping page: 0x%x\n", virtualAddr);
+    uint64_t *pml4 = reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdmOffset);
+    uint64_t *pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
+    uint64_t *pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
+    uint64_t *pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
+    pt[PT_ID(virtualAddr)] = 0;
+    __asm__ volatile (" invlpg (%0) " :: "a"(virtualAddr));
 }
 
 void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uint64_t count)

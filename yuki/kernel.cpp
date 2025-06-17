@@ -148,6 +148,7 @@ extern "C" void kernelMain()
     initVmm(memmap_request.response, hhdm);
 
     mapPages(0xff200000, 0xffff2000, 0x3, 0xf000);
+    unmapPage(0xff20a000);
 
     // We're done, just hang...
     hcf();
