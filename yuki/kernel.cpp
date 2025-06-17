@@ -146,6 +146,11 @@ extern "C" void kernelMain()
     initIdt();
     initPmm(memmap_request.response, hhdm);
 
+    uint64_t pTest = pmmAlloc();
+    uint64_t *test = reinterpret_cast<uint64_t *>(pTest + hhdm);
+    *test = 64;
+    pmmFree(pTest);
+
     // We're done, just hang...
     hcf();
 }

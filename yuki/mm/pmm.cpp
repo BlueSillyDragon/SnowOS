@@ -80,24 +80,30 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
     kprintf(PMM, "Finished building FreeList!\n");
     kprintf(PMM, "SnowOS has %dGB of memory available\n", ((nop * 4) / 1024) / 1024);
     kprintf(PMM, "Usable Pages: %d\n", nop);
-    kprintf(PMM, "First free memory region starts at 0x%x with a length of 0x%x\n", head.start, head.length);
 }
 
 uint64_t pmmAlloc()
 {
-    if (head.next == nullptr)
+    if (head.start == (head.length + 0x1000) && head.next == nullptr)
     {
         kprintf(ERROR, "Out of Memory!\n");
         return 0x0;
     }
     uint64_t returnPage = head.start;
     head.start += 0x1000;
-    kprintf(PMM, "Next free page is 0x%x\n", head.start);
 
     return returnPage;
 }
 
 void pmmFree(uint64_t page)
 {
-    
+    if (page != (head.start - 0x1000)) {
+        pmmNode *newNode = reinterpret_cast<pmmNode *>(page + hhdm_offset);
+        memset(newNode, 0, 0x1000);
+        newNode->next = &head;
+        head = *newNode;
+        kprintf(PMM, "New freelist entry created!\n");
+    } else {
+        head.start -= 0x1000;
+    }
 }
