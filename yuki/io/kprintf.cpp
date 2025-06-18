@@ -40,6 +40,10 @@ void kprintf(INFO info, const char *string, ...)
 
     if (info != NONE) {
         switch (info) {
+            case YUKI:
+                flanterm_write(ftCtx, "[ \033[34mYuki\033[0m ] ", sizeof("[ \033[34mYuki\033[0m ] "));
+                stringToSerial("[ \033[34mYuki\033[0m ] ");
+                break;
             case OK:
                 flanterm_write(ftCtx, "[ \033[92mOK\033[0m ] ", sizeof("[ \033[92mOK\033[0m ] "));
                 stringToSerial("[ \033[92mOK\033[0m ] ");
@@ -55,6 +59,10 @@ void kprintf(INFO info, const char *string, ...)
             case VMM:
                 flanterm_write(ftCtx, "[ \033[95mVmm\033[0m ] ", sizeof("[ \033[95mVmm\033[0m ] "));
                 stringToSerial("[ \033[95mVmm\033[0m ] ");
+                break;
+            case SLAB:
+                flanterm_write(ftCtx, "[ \033[33mSlab\033[0m ] ", sizeof("[ \033[33mSlab\033[0m ] "));
+                stringToSerial("[ \033[33mSlab\033[0m ] ");
                 break;
             case SCHEDULER:
                 flanterm_write(ftCtx, "[ \033[93mScheduler\033[0m ] ", sizeof("[ \033[93mScheduler\033[0m ] "));

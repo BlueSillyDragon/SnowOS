@@ -14,6 +14,7 @@
 #include <inc/sys/idt.hpp>
 #include <inc/mm/pmm.hpp>
 #include <inc/mm/vmm.hpp>
+#include <inc/mm/slab.hpp>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -153,6 +154,17 @@ extern "C" void kernelMain()
     initIdt();
     initPmm(memmap_request.response, hhdm);
     initVmm(memmap_request.response, executable_request.response, hhdm);
+    initSlab(hhdm);
+
+    uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
+    *test = 64;
+    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test, test);
+    uint64_t *test2 = (uint64_t *)kmalloc(sizeof(uint64_t));
+    *test2 = 128;
+    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test2, test2);
+    uint64_t *test3 = (uint64_t *)kmalloc(sizeof(uint64_t));
+    *test3 = 256;
+    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test3, test3);
 
     // We're done, just hang...
     hcf();

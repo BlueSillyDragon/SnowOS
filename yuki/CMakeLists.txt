@@ -10,7 +10,8 @@ set(SOURCES "kernel.cpp"
 "sys/idt.asm"
 "sys/isr.asm"
 "mm/pmm.cpp"
-"mm/vmm.cpp")
+"mm/vmm.cpp"
+"mm/slab.cpp")
 
 add_executable(yuki ${SOURCES} flanterm/src/flanterm.c flanterm/src/flanterm_backends/fb.c)
 
