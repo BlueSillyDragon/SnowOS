@@ -16,13 +16,18 @@ void initSlab(uint64_t hhdm) {
     hhdmOffs = hhdm;
     caches = reinterpret_cast<SlabCache *>(pmmAlloc() + hhdm);
     memset(caches, 0, 0x1000);
-    caches[0] = createCache(8);
-    caches[1] = createCache(16);
-    caches[2] = createCache(32);
+
+    uint64_t objSize = 8;
+    for (uint64_t i = 0; objSize <= 256; i++) {
+        caches[i] = createCache(objSize);
+        objSize *= 2;
+    }
+
+    for (uint64_t i = 0; caches[i].objSize != 0; i++) {
+        caches[i].slabsEmpty = createSlab(caches[i].objSize, nullptr, nullptr);
+    }
+
     kprintf(SLAB, "Caches located at 0x%lx\n", caches);
-    caches[0].slabsEmpty = createSlab(caches[0].objSize, nullptr, nullptr);
-    caches[1].slabsEmpty = createSlab(caches[1].objSize, nullptr, nullptr);
-    caches[2].slabsEmpty = createSlab(caches[2].objSize, nullptr, nullptr);
     kprintf(SLAB, "Slab Allocator Initialized!\n");
 }
 
@@ -37,38 +42,74 @@ Slab *createSlab(uint64_t objSize, Slab *prevSlab, Slab *nextSlab) {
     newSlab->head = reinterpret_cast<uint64_t *>((uint64_t)newSlab & ~0xfff);
     uint64_t next = (uint64_t)newSlab->head + objSize;
     uint64_t *current = newSlab->head;
-    while (next != (uint64_t)newSlab) {
+    while (next < (uint64_t)newSlab) {
         *current = next;
         current = (uint64_t *)next;
         next += objSize;
     }
+    *current = NULL;
     newSlab->prev = prevSlab;
     newSlab->next = nextSlab;
     return newSlab;
+}
+
+Slab *getLastSlab(SlabCache cache) {
+    if (cache.slabsEmpty == nullptr) {
+        kprintf(SLAB, "No empty slabs available!\n");
+        return nullptr;
+    }
+
+    Slab *currentSlab = cache.slabsEmpty;
+
+    uint64_t slabCount = 1;
+
+    while (currentSlab->next != nullptr) {
+        currentSlab = currentSlab->next;
+        slabCount++;
+    }
+
+    //kprintf(SLAB, "There were %d slabs located in %d byte cache\n", slabCount, cache.objSize);
+    return currentSlab;
 }
 
 void *kmalloc(size_t bytes) {
     uint64_t i;
     bool cacheExists = false;
 
-    void *ret = caches[0].slabsEmpty->head;
-
     for (i = 0; i < 1024; i++) {
         if (caches[i].objSize == bytes) {
             cacheExists = true;
-            kprintf(SLAB, "A cache for %d byte objects exists!\n", bytes);
+            //kprintf(SLAB, "A cache for %d byte objects exists!\n", bytes);
             break;
         }
     } if (!cacheExists) {
-        kprintf(SLAB, "A cache for %d byte objects does not exist! Creating new slab...\n", bytes);
+        //kprintf(SLAB, "A cache for %d byte objects does not exist! Creating new slab...\n", bytes);
         // TODO: Implement creation of new slabs
         return nullptr;
     }
-    caches[i].slabsEmpty->head = (uint64_t *)*caches[i].slabsEmpty->head;
-    kprintf(SLAB, "Head now points to 0x%lx\n", caches[i].slabsEmpty->head);
+
+    Slab *currentSlab = getLastSlab(caches[i]);
+
+    if (currentSlab->head == nullptr) {
+        if (currentSlab->prev == nullptr || currentSlab->prev->head == nullptr) {
+            currentSlab->next = createSlab(caches[i].objSize, currentSlab, nullptr);
+            currentSlab = currentSlab->next;
+        } else {
+            currentSlab = currentSlab->prev;
+        }
+    }
+
+    void *ret = currentSlab->head;
+
+    currentSlab->head = (uint64_t *)*currentSlab->head;
+    currentSlab->refCount++;
     return ret;
 }
 
 void kfree(void *ptr) {
-
+    Slab *slab = reinterpret_cast<Slab *>(((uint64_t)ptr & ~0xfff) + 0x1000 - sizeof(Slab));
+    uint64_t *newHead = (uint64_t *)ptr;
+    *newHead = (uint64_t)slab->head;
+    slab->head = newHead;
+    slab->refCount--;
 }

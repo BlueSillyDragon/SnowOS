@@ -156,15 +156,14 @@ extern "C" void kernelMain()
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
 
-    uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
-    *test = 64;
-    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test, test);
-    uint64_t *test2 = (uint64_t *)kmalloc(sizeof(uint64_t));
-    *test2 = 128;
-    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test2, test2);
-    uint64_t *test3 = (uint64_t *)kmalloc(sizeof(uint64_t));
-    *test3 = 256;
-    kprintf(YUKI, "A uint64 with the value %d located at 0x%lx\n", *test3, test3);
+    uint64_t *buf = (uint64_t *)kmalloc(sizeof(uint64_t) * 2);
+    memset(buf, 'S', sizeof(uint64_t) * 2);
+
+    for (uint64_t i = 0; i < (0x1000 * 10); i++) {
+        uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t) * 2);
+        memset(test, 'S', sizeof(uint64_t) * 2);
+        int rv = memcmp(buf, test, sizeof(uint64_t) * 2);
+    }
 
     // We're done, just hang...
     hcf();
