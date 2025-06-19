@@ -1,6 +1,8 @@
 #include <cstddef>
 #include <cstdint>
 
+enum SLAB_TYPE {EMPTY, PARTIAL, FULL};
+
 struct Slab {
     Slab *prev;
     uint64_t refCount;
@@ -18,6 +20,6 @@ struct SlabCache {
 void initSlab(uint64_t hhdm);
 SlabCache createCache(uint64_t objSize);
 Slab *createSlab(uint64_t objSize, Slab *prevSlab, Slab *nextSlab);
-Slab *getLastSlab(SlabCache cache);
+Slab *getSlab(SlabCache cache);
 void *kmalloc(size_t bytes);
 void kfree(void *ptr);

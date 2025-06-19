@@ -156,13 +156,10 @@ extern "C" void kernelMain()
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
 
-    uint64_t *buf = (uint64_t *)kmalloc(sizeof(uint64_t) * 2);
-    memset(buf, 'S', sizeof(uint64_t) * 2);
-
-    for (uint64_t i = 0; i < (0x1000 * 10); i++) {
-        uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t) * 2);
-        memset(test, 'S', sizeof(uint64_t) * 2);
-        int rv = memcmp(buf, test, sizeof(uint64_t) * 2);
+    for (int i = 0; i < 0x1000; i++) {
+        uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
+        *test = i;
+        kprintf(YUKI, "uint64 with value %d located at 0x%lx\n", *test, test);
     }
 
     // We're done, just hang...
