@@ -37,6 +37,7 @@ SlabCache createCache(uint64_t objSize) {
     return newCache;
 }
 
+// TODO: Add metadata so that we don't need the size passed to kfree()
 Slab *createSlab(uint64_t objSize, Slab *prevSlab, Slab *nextSlab) {
     Slab *newSlab = reinterpret_cast<Slab *>((pmmAlloc() + 0x1000 - sizeof(Slab)) + hhdmOffs);
     newSlab->head = reinterpret_cast<uint64_t *>((uint64_t)newSlab & ~0xfff);
@@ -50,14 +51,13 @@ Slab *createSlab(uint64_t objSize, Slab *prevSlab, Slab *nextSlab) {
     *current = NULL;
     newSlab->prev = prevSlab;
     newSlab->next = nextSlab;
+    newSlab->refCount = 0;
     return newSlab;
 }
 
 Slab *getSlab(SlabCache cache) {
     if (cache.slabsPartial == nullptr) {
-        kprintf(SLAB, "No partial slabs available! Grabbing an empty slab...\n");
         if (cache.slabsEmpty == nullptr) {
-            kprintf(SLAB, "No empty slabs in cache! Creating new one...\n");
             cache.slabsEmpty = createSlab(cache.objSize, nullptr, nullptr);
         }
         return cache.slabsEmpty;
@@ -126,8 +126,6 @@ void *kmalloc(size_t bytes) {
         currentSlab->next = caches[i].slabsFull;
         caches[i].slabsFull = currentSlab;
 
-        kprintf(SLAB, "Getting next slab...\n");
-
         currentSlab = getSlab(caches[i]);
     }
 
@@ -142,7 +140,6 @@ void *kmalloc(size_t bytes) {
         caches[i].slabsPartial = currentSlab;
 
         if (findSlab(caches[i], currentSlab, EMPTY) == currentSlab) {
-            kprintf(SLAB, "Was empty slab! Moving off list.\n");
             caches[i].slabsEmpty = currentSlab->next;
         }
     }
@@ -150,10 +147,38 @@ void *kmalloc(size_t bytes) {
     return ret;
 }
 
-void kfree(void *ptr) {
+void kfree(void *ptr, size_t bytes) {
+    uint64_t i;
     Slab *slab = reinterpret_cast<Slab *>(((uint64_t)ptr & ~0xfff) + 0x1000 - sizeof(Slab));
+
     uint64_t *newHead = (uint64_t *)ptr;
     *newHead = (uint64_t)slab->head;
     slab->head = newHead;
     slab->refCount--;
+
+    for (i = 0; i < 1024; i++) {
+        if (caches[i].objSize == bytes) {
+            break;
+        }
+    }
+
+    if (slab->refCount == 0) {
+        kprintf(SLAB, "Freed last object of slab, moving to empty list...\n");
+        slab->next = caches[i].slabsEmpty;
+        caches[i].slabsEmpty = slab;
+    } else if (findSlab(caches[i], slab, FULL) == slab) {
+        kprintf(SLAB, "Moving to partial list\n");
+        // When it's on the top
+        if (slab->prev == nullptr) {
+            slab->next->prev = nullptr;
+            caches[i].slabsFull = slab->next;
+        } else {
+            slab->prev->next = slab->next;
+            slab->next->prev = slab->prev;
+        }
+        slab->next = caches[i].slabsPartial;
+        caches[i].slabsPartial = slab;
+    }
+
+    kprintf(SLAB, "Object of %d bytes was freed!\n", bytes);
 }

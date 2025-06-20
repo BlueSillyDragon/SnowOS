@@ -156,11 +156,11 @@ extern "C" void kernelMain()
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
 
-    for (int i = 0; i < 0x1000; i++) {
-        uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
-        *test = i;
-        kprintf(YUKI, "uint64 with value %d located at 0x%lx\n", *test, test);
-    }
+    uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
+    uint64_t *test2 = (uint64_t *)kmalloc(sizeof(uint64_t));
+    *test = 64;
+    kfree(test, sizeof(uint64_t));
+    kfree(test2, sizeof(uint64_t));
 
     // We're done, just hang...
     hcf();
