@@ -41,14 +41,17 @@ SlabCache createCache(uint64_t objSize) {
 Slab *createSlab(uint64_t objSize, Slab *prevSlab, Slab *nextSlab) {
     Slab *newSlab = reinterpret_cast<Slab *>((pmmAlloc() + 0x1000 - sizeof(Slab)) + hhdmOffs);
     newSlab->head = reinterpret_cast<uint64_t *>((uint64_t)newSlab & ~0xfff);
+
     uint64_t next = (uint64_t)newSlab->head + objSize;
     uint64_t *current = newSlab->head;
+
     while (next < (uint64_t)newSlab) {
         *current = next;
         current = (uint64_t *)next;
         next += objSize;
     }
     *current = NULL;
+    
     newSlab->prev = prevSlab;
     newSlab->next = nextSlab;
     newSlab->refCount = 0;
@@ -70,31 +73,19 @@ Slab *findSlab(SlabCache cache, Slab *slabToFind, SLAB_TYPE type) {
     switch (type) {
         case EMPTY:
             currentSlab = cache.slabsEmpty;
-            while (currentSlab != nullptr) {
-                if (currentSlab == slabToFind) {
-                    return currentSlab;
-                }
-                currentSlab = currentSlab->next;
-            }
             break;
         case PARTIAL:
             currentSlab = cache.slabsPartial;
-            while (currentSlab != nullptr) {
-                if (currentSlab == slabToFind) {
-                    return currentSlab;
-                }
-                currentSlab = currentSlab->next;
-            }
             break;
         case FULL:
             currentSlab = cache.slabsFull;
-            while (currentSlab != nullptr) {
-                if (currentSlab == slabToFind) {
-                    return currentSlab;
-                }
-                currentSlab = currentSlab->next;
-            }
             break;
+    }
+    while (currentSlab != nullptr) {
+            if (currentSlab == slabToFind) {
+                return currentSlab;
+            }
+            currentSlab = currentSlab->next;
     }
     return nullptr;
 }
@@ -106,14 +97,13 @@ void *kmalloc(size_t bytes) {
     for (i = 0; i < 1024; i++) {
         if (caches[i].objSize == bytes) {
             cacheExists = true;
-            //kprintf(SLAB, "A cache for %d byte objects exists!\n", bytes);
             break;
         }
     } if (!cacheExists) {
-        //kprintf(SLAB, "A cache for %d byte objects does not exist! Creating new slab...\n", bytes);
-        // TODO: Implement creation of new slabs
         for (i = 0; caches[i].objSize != 0; i++) {}
+
         kprintf(SLAB, "First empty is cache %d at 0x%lx\n", i, &caches[i]);
+
         caches[i] = createCache(bytes);
         caches[i].slabsEmpty = createSlab(bytes, nullptr, nullptr);
     }
@@ -164,20 +154,35 @@ void kfree(void *ptr, size_t bytes) {
 
     if (slab->refCount == 0) {
         kprintf(SLAB, "Freed last object of slab, moving to empty list...\n");
+
         slab->next = caches[i].slabsEmpty;
         caches[i].slabsEmpty = slab;
-    } else if (findSlab(caches[i], slab, FULL) == slab) {
+
+        // Remove off the partial list (this'll break if freeing from a free slab, but just, don't do that)
+        caches[i].slabsPartial = slab->next;
+
+        slab->prev = nullptr;
+
+    } else if (findSlab(caches[i], slab, FULL) != nullptr) {
         kprintf(SLAB, "Moving to partial list\n");
+        
         // When it's on the top
-        if (slab->prev == nullptr) {
-            slab->next->prev = nullptr;
+        if (caches[i].slabsFull == slab) {
             caches[i].slabsFull = slab->next;
+            if (slab->next != nullptr) {
+                slab->next->prev = nullptr;
+            }
         } else {
             slab->prev->next = slab->next;
-            slab->next->prev = slab->prev;
+            if (slab->next != nullptr) {
+                slab->next->prev = nullptr;
+            }
         }
+
         slab->next = caches[i].slabsPartial;
         caches[i].slabsPartial = slab;
+
+        slab->prev = nullptr;
     }
 
     kprintf(SLAB, "Object of %d bytes was freed!\n", bytes);
