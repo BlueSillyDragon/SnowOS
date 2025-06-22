@@ -1,5 +1,6 @@
 #include "inc/io/kprintf.hpp"
 #include "inc/io/terminal.hpp"
+#include "uacpi/status.h"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
@@ -15,6 +16,7 @@
 #include <inc/mm/pmm.hpp>
 #include <inc/mm/vmm.hpp>
 #include <inc/mm/slab.hpp>
+#include <uacpi/uacpi.h>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -66,6 +68,13 @@ volatile limine_kernel_address_request executable_request = {
     .response = nullptr
 };
 
+__attribute__((used, section(".limine_requests")))
+volatile limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
 }
 
 // Finally, define the start and end markers for the Limine requests.
@@ -109,6 +118,8 @@ extern void (*__init_array_end[])();
 uint64_t hhdm;
 
 uint32_t testColor = 0x23272E;
+
+uint64_t rsdp;
 
 extern "C" void kernelMain()
 {
@@ -156,14 +167,13 @@ extern "C" void kernelMain()
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
 
-    uint64_t *buf = (uint64_t *)kmalloc(sizeof(uint64_t));
-    memset(buf, 'S', sizeof(uint64_t));
+    rsdp = (uint64_t)rsdp_request.response->address;
 
-    for (uint64_t i = 0; i < 1000000; i++) {
-        uint64_t *test = (uint64_t *)kmalloc(sizeof(uint64_t));
-        memset(test, 'S', sizeof(uint64_t));
-        int rv = memcmp(test, buf, sizeof(uint64_t));
-    }
+    kprintf(YUKI, "RSDP located at 0x%lx\n", rsdp);
+
+    void *tempBuffer = reinterpret_cast<void *>(pmmAlloc() + hhdm);
+
+    uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
     kprintf(YUKI, "Done!\n");
 

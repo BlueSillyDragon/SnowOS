@@ -14,6 +14,11 @@ constexpr uint64_t ptePwt = 0x8;
 constexpr uint64_t ptePcd = 0x10;
 constexpr uint64_t pteAddress = 0x0000fffffffff000;
 
+constexpr uint64_t uAcpiMapBase = 0xffff'a000'0000'0000;
+constexpr uint64_t uAcpiMapLimit = 0xffff'a000'ffff'f000;
+
+uint64_t totalPages = 0;
+
 #define PML4_ID(virt) (((virt) >> 39) & 0x1FF)
 #define PDPT_ID(virt) (((virt) >> 30) & 0x1FF)
 #define PD_ID(virt) (((virt) >> 21) & 0x1FF)
@@ -141,7 +146,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
 }
 
 void unmapPage(uint64_t virtualAddr) {
-    kprintf(VMM, "Unmapping page: 0x%x\n", virtualAddr);
+    kprintf(VMM, "Unmapping page: 0x%lx\n", virtualAddr);
     uint64_t *pml4 = reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdmOffset);
     uint64_t *pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
@@ -161,4 +166,46 @@ void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uin
     for (uint64_t i = 0; i < count; i += 0x1000) {
         mapPage(virtualStart + i, physicalStart + i, flags);
     }
+}
+
+void unmapPages(uint64_t virtualStart, uint64_t count) {
+    if (virtualStart % 0x1000 != 0 || count % 0x1000 != 0)
+    {
+        kprintf(ERROR, "Attempted to unmap multiple virtual addresses or count that was not aligned to 4KB!\n");
+        __asm__ volatile (" hlt ");
+    }
+
+    for (uint64_t i = 0; i < count; i += 0x1000) {
+        unmapPage(virtualStart + i);
+    }
+}
+
+void *vmmMapPhys(uint64_t physicalAddr, size_t length) {
+    // First, round down the physical address
+    uint64_t alignedPA = (physicalAddr & ~0xfff);
+    kprintf(VMM, "PA rounded down is 0x%lx\n", alignedPA);
+
+    // Now round up the length
+    length += (physicalAddr - alignedPA);
+    length = (length & ~0xfff) + 0x2000;
+    kprintf(VMM, "Length rounded up is 0x%lx\n", length);
+
+    uint64_t virtualAddr = (uAcpiMapBase + (totalPages * 0x1000));
+    
+    mapPages(virtualAddr, alignedPA, 0x3, length);
+
+    totalPages += (length / 0x1000) - 1;
+    return (void *)(virtualAddr + (physicalAddr - alignedPA));
+}
+
+void vmmUnmapVirt(void *virtualAddr, size_t length) {
+    // First, round down the physical address
+    uint64_t alignedVA = (uint64_t)virtualAddr & ~0xfff;
+    kprintf(VMM, "Virtual Address being unmapped 0x%lx\n", alignedVA);
+
+    length += ((uint64_t)virtualAddr - alignedVA);
+    length = (length & ~0xfff) + 0x1000;
+    kprintf(VMM, "Length rounded up is 0x%lx\n", length);
+
+    unmapPages(alignedVA, length);
 }

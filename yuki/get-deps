@@ -88,3 +88,8 @@ clone_repo_commit \
     https://codeberg.org/mintsuki/flanterm.git \
     flanterm \
     4cacad16218ba85d7d7f7566b2b3de46574c7d60
+
+clone_repo_commit \
+    https://github.com/uACPI/uACPI.git \
+    uACPI \
+    56258b3b9edc6dedbfce81955c9331caf9f4e2da

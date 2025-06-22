@@ -16,7 +16,7 @@ $ cd SnowOS
 
 You'll need to install the needed tools to be able to build SnowOS if you don't have them installed already.
 ```
-$ sudo apt install cmake clang ninja-build lld llvm
+$ sudo apt install cmake clang ninja-build lld llvm nasm
 ```
 Also install qemu and ovmf for running SnowOS, you can skip this if you're going to use a different VM though (eg. VirtualBox)
 > [!WARNING]
@@ -64,7 +64,7 @@ This should generate an image file called SnowOS.img, then you can just run it n
 Now when you run SnowOS, you should be booted into the kernel.
 
 ## Technologies
-Uses tinyubsan by rdmsr, Limine is the bootloader (will eventually swap back in with SnowBoot once I'm more confident in SnowBoot's abilities lol).
+Uses tinyubsan by rdmsr, Limine is the bootloader (will eventually swap back in with SnowBoot once I'm more confident in SnowBoot's abilities lol), Flanterm for a terminal emulator, and uACPI for ACPI stuff.
 
 ## License
 SnowOS is under an GPLv3 License.

@@ -12,6 +12,7 @@ yuki/freestnd-c-hdrs
 yuki/freestnd-cxx-hdrs
 yuki/flanterm
 yuki/limine.h
+yuki/uACPI
 limine
 build
 .cache

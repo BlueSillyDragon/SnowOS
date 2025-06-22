@@ -80,3 +80,48 @@ void kprintf(INFO info, const char *string, ...)
     memset(buf, 0, sizeof(buf));
     idx = 0;
 }
+
+void kvprintf(INFO info, const char *string, std::va_list arg)
+{
+
+    if (info != NONE) {
+        switch (info) {
+            case YUKI:
+                flanterm_write(ftCtx, "[ \033[34mYuki\033[0m ] ", sizeof("[ \033[34mYuki\033[0m ] "));
+                stringToSerial("[ \033[34mYuki\033[0m ] ");
+                break;
+            case OK:
+                flanterm_write(ftCtx, "[ \033[92mOK\033[0m ] ", sizeof("[ \033[92mOK\033[0m ] "));
+                stringToSerial("[ \033[92mOK\033[0m ] ");
+                break;
+            case ERROR:
+                flanterm_write(ftCtx, "[ \033[91mError\033[0m ] ", sizeof("[ \033[91mError\033[0m ] "));
+                stringToSerial("[ \033[91mError\033[0m ] ");
+                break;
+            case PMM:
+                flanterm_write(ftCtx, "[ \033[94mPmm\033[0m ] ", sizeof("[ \033[94mPmm\033[0m ] "));
+                stringToSerial("[ \033[94mPmm\033[0m ] ");
+                break;
+            case VMM:
+                flanterm_write(ftCtx, "[ \033[95mVmm\033[0m ] ", sizeof("[ \033[95mVmm\033[0m ] "));
+                stringToSerial("[ \033[95mVmm\033[0m ] ");
+                break;
+            case SLAB:
+                flanterm_write(ftCtx, "[ \033[33mSlab\033[0m ] ", sizeof("[ \033[33mSlab\033[0m ] "));
+                stringToSerial("[ \033[33mSlab\033[0m ] ");
+                break;
+            case SCHEDULER:
+                flanterm_write(ftCtx, "[ \033[93mScheduler\033[0m ] ", sizeof("[ \033[93mScheduler\033[0m ] "));
+                stringToSerial("[ \033[93mScheduler\033[0m ] ");
+                break;
+        }
+    }
+
+    npf_vpprintf(putchar, nullptr, string, arg);
+
+    flanterm_write(ftCtx, buf, strlen(buf));
+    
+    // Make sure to clear the buffer
+    memset(buf, 0, sizeof(buf));
+    idx = 0;
+}
