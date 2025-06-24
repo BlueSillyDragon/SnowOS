@@ -17,6 +17,7 @@
 #include <inc/mm/slab.hpp>
 #include <uacpi/uacpi.h>
 #include <uacpi/tables.h>
+#include <uacpi/acpi.h>
 #include <inc/utils/mmio.hpp>
 #include <inc/sys/cpuid.hpp>
 #include <inc/sys/lapic.hpp>
@@ -176,21 +177,25 @@ extern "C" void kernelMain()
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
-    uacpi_table hpet_timer;
-    uacpi_table_find_by_signature("HPET", &hpet_timer);
+    kprintf(YUKI, "Starting HPET timer...\n");
 
-    kprintf(YUKI, "HPET Virtual Address 0x%lx\n", hpet_timer.ptr);
+    uacpi_table table;
 
-    kprintf(YUKI, "Calculating HPET frequency...\n");
+    if (uacpi_table_find_by_signature(ACPI_HPET_SIGNATURE, &table) != UACPI_STATUS_OK) {
+        kprintf(ERROR, "HPET not supported by CPU!");
+        __asm__ volatile (" hlt ");
+    }
+    acpi_hpet *hpet = reinterpret_cast<acpi_hpet *>(table.ptr);
 
-    uint64_t gcir = mmioRead((uint64_t)hpet_timer.ptr, sizeof(uint64_t));
-    uint64_t cfgr = mmioRead((uint64_t)hpet_timer.ptr + 0x10, sizeof(uint64_t));
+    kprintf(YUKI, "Physical Address of HPET at 0x%lx\n", hpet->address.address);
 
-    mmioWrite((uint64_t)hpet_timer.ptr + 0x10, 0x1, sizeof(uint8_t));
+    uint64_t hpet_base = (uint64_t)vmmMapPhys(hpet->address.address, 0x1000);
+
+    uint64_t gcir = mmioRead(hpet_base, sizeof(uint64_t));
 
     uint64_t frequency = 1'000'000'000'000'000ull / (gcir >> 32);
 
-    kprintf(YUKI, "Frequency is %lu\n", frequency);
+    kprintf(YUKI, "Frequency of HPET is %d\n", frequency);
 
     kprintf(YUKI, "Enabling the Local APIC Timer...\n");
 
