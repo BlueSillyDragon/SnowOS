@@ -18,7 +18,7 @@ void initSlab(uint64_t hhdm) {
     memset(caches, 0, 0x1000);
 
     uint64_t objSize = 8;
-    for (uint64_t i = 0; objSize <= 256; i++) {
+    for (uint64_t i = 0; objSize <= 512; i++) {
         caches[i] = createCache(objSize);
         objSize *= 2;
     }

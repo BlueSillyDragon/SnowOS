@@ -13,7 +13,10 @@ set(SOURCES "kernel.cpp"
 "mm/pmm.cpp"
 "mm/vmm.cpp"
 "mm/slab.cpp"
-"kernel_api.cpp")
+"kernel_api.cpp"
+"sys/cpuid.cpp"
+"utils/mmio.cpp"
+"sys/lapic.cpp")
 
 include(uACPI/uacpi.cmake)
 

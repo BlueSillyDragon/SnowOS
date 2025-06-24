@@ -1,6 +1,3 @@
-#include "inc/io/kprintf.hpp"
-#include "inc/io/terminal.hpp"
-#include "uacpi/status.h"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
@@ -8,6 +5,8 @@
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 #include <inc/io/serial.hpp>
+#include <inc/io/kprintf.hpp>
+#include <inc/io/terminal.hpp>
 #include <inc/io/krnl_colors.hpp>
 #include <inc/io/krnl_font.hpp>
 #include <inc/io/logo.hpp>
@@ -17,6 +16,10 @@
 #include <inc/mm/vmm.hpp>
 #include <inc/mm/slab.hpp>
 #include <uacpi/uacpi.h>
+#include <uacpi/tables.h>
+#include <inc/utils/mmio.hpp>
+#include <inc/sys/cpuid.hpp>
+#include <inc/sys/lapic.hpp>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -169,11 +172,29 @@ extern "C" void kernelMain()
 
     rsdp = (uint64_t)rsdp_request.response->address;
 
-    kprintf(YUKI, "RSDP located at 0x%lx\n", rsdp);
-
     void *tempBuffer = reinterpret_cast<void *>(pmmAlloc() + hhdm);
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
+
+    uacpi_table hpet_timer;
+    uacpi_table_find_by_signature("HPET", &hpet_timer);
+
+    kprintf(YUKI, "HPET Virtual Address 0x%lx\n", hpet_timer.ptr);
+
+    kprintf(YUKI, "Calculating HPET frequency...\n");
+
+    uint64_t gcir = mmioRead((uint64_t)hpet_timer.ptr, sizeof(uint64_t));
+    uint64_t cfgr = mmioRead((uint64_t)hpet_timer.ptr + 0x10, sizeof(uint64_t));
+
+    mmioWrite((uint64_t)hpet_timer.ptr + 0x10, 0x1, sizeof(uint8_t));
+
+    uint64_t frequency = 1'000'000'000'000'000ull / (gcir >> 32);
+
+    kprintf(YUKI, "Frequency is %lu\n", frequency);
+
+    kprintf(YUKI, "Enabling the Local APIC Timer...\n");
+
+    enableLapicTimer();
 
     kprintf(YUKI, "Done!\n");
 

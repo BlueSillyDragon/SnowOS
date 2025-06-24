@@ -41,32 +41,32 @@ void kprintf(INFO info, const char *string, ...)
     if (info != NONE) {
         switch (info) {
             case YUKI:
-                flanterm_write(ftCtx, "[ \033[34mYuki\033[0m ] ", sizeof("[ \033[34mYuki\033[0m ] "));
-                stringToSerial("[ \033[34mYuki\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BLUE "Yuki" ANSI_RESET " ] ", strlen("[ " ANSI_BLUE "Yuki" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BLUE "Yuki" ANSI_RESET " ] ");
                 break;
             case OK:
-                flanterm_write(ftCtx, "[ \033[92mOK\033[0m ] ", sizeof("[ \033[92mOK\033[0m ] "));
-                stringToSerial("[ \033[92mOK\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BRIGHT_GREEN "OK" ANSI_RESET " ] ", strlen("[ " ANSI_BRIGHT_GREEN "OK" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BRIGHT_GREEN "OK" ANSI_RESET " ] ");
                 break;
             case ERROR:
-                flanterm_write(ftCtx, "[ \033[91mError\033[0m ] ", sizeof("[ \033[91mError\033[0m ] "));
-                stringToSerial("[ \033[91mError\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BRIGHT_RED "Error" ANSI_RESET " ] ", strlen("[ " ANSI_BRIGHT_RED "Error" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BRIGHT_RED "Error" ANSI_RESET " ] ");
                 break;
             case PMM:
-                flanterm_write(ftCtx, "[ \033[94mPmm\033[0m ] ", sizeof("[ \033[94mPmm\033[0m ] "));
-                stringToSerial("[ \033[94mPmm\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BRIGHT_BLUE "Pmm" ANSI_RESET " ] ", strlen("[ " ANSI_BRIGHT_BLUE "Pmm" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BRIGHT_BLUE "Pmm" ANSI_RESET " ] ");
                 break;
             case VMM:
-                flanterm_write(ftCtx, "[ \033[95mVmm\033[0m ] ", sizeof("[ \033[95mVmm\033[0m ] "));
-                stringToSerial("[ \033[95mVmm\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BRIGHT_MAGENTA "Vmm" ANSI_RESET " ] ", strlen("[ " ANSI_BRIGHT_MAGENTA "Vmm" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BRIGHT_MAGENTA "Vmm" ANSI_RESET " ] ");
                 break;
             case SLAB:
-                flanterm_write(ftCtx, "[ \033[33mSlab\033[0m ] ", sizeof("[ \033[33mSlab\033[0m ] "));
-                stringToSerial("[ \033[33mSlab\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_YELLOW "Slab" ANSI_RESET " ] ", strlen("[ " ANSI_YELLOW "Slab" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_YELLOW "Slab" ANSI_RESET " ] ");
                 break;
             case SCHEDULER:
-                flanterm_write(ftCtx, "[ \033[93mScheduler\033[0m ] ", sizeof("[ \033[93mScheduler\033[0m ] "));
-                stringToSerial("[ \033[93mScheduler\033[0m ] ");
+                flanterm_write(ftCtx, "[ " ANSI_BRIGHT_YELLOW "Scheduler" ANSI_RESET " ] ", strlen("[ " ANSI_BRIGHT_YELLOW "Scheduler" ANSI_RESET " ] "));
+                stringToSerial("[ " ANSI_BRIGHT_YELLOW "Scheduler" ANSI_RESET " ] ");
                 break;
         }
     }

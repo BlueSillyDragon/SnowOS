@@ -28,8 +28,10 @@ void initIdt()
     {
         idtSetDescriptor(i, isr_stub_table[i], 0x8e);
     }
-    idtSetDescriptor(0x60, isr_stub_table[32], 0x8e);
+    idtSetDescriptor(32, isr_stub_table[32], 0x8e);
+    idtSetDescriptor(0xff, isr_stub_table[39], 0x8e);
+    idtSetDescriptor(0x60, isr_stub_table[40], 0x8e);
 
-    __asm__ volatile ("lidt %0" :: "m"(idtr));
+    __asm__ __volatile__ ("lidt %0" :: "m"(idtr));
     kprintf(OK, "IDT Initialized!\n");
 }
