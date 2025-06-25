@@ -32,9 +32,7 @@ isr_stub_%+%1:
 
 %macro timer_int_stub 1
 isr_stub_%+%1:
-    push rax
     call timerHandler
-    pop rax
     iretq
 %endmacro
 
@@ -99,7 +97,7 @@ isr_syscall_stub 41
 global isr_stub_table
 isr_stub_table:
 %assign i 0 
-%rep    33 
+%rep    42
     dq isr_stub_%+i
 %assign i i+1 
 %endrep

@@ -181,6 +181,8 @@ extern "C" void kernelMain()
     enableHpet();
     enableLapicTimer();
 
+    __asm__ volatile ("sti");
+
     kprintf(YUKI, "Done!\n");
 
     // We're done, just hang...

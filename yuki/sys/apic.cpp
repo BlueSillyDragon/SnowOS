@@ -48,11 +48,12 @@
 #define LAPIC_TMR_PERIODIC_SHIFT 0x20000
 
 constexpr uint32_t Ia32ApicBaseMsr = 0x1b;
-constexpr uint64_t Ia32ApicBaseMask = 0xffff'f000;
+constexpr uint32_t Ia32ApicBaseMask = 0xffff'f000;
 
 bool x2Apic;
 
 uintptr_t lapicMmio;
+uint64_t ticksPerNs;
 
 Cpuid cpuid;
 
@@ -72,17 +73,22 @@ uint32_t toX2Apic(const uint32_t registr) {
     return (registr >> 4) + 0x800;
 }
 
-static inline uint32_t apicRead(uint32_t registr) {
+uint32_t apicRead(uint32_t registr) {
     if (x2Apic) {
         uint32_t ret = rdmsr(toX2Apic(registr));
+        return ret;
+    } else {
+        uint32_t ret = mmioRead(lapicMmio + registr, sizeof(uint32_t));
         return ret;
     }
     return 0;
 }
 
-static inline void apicWrite(uint32_t registr, uint32_t value) {
+void apicWrite(uint32_t registr, uint32_t value) {
     if (x2Apic) {
         wrmsr(toX2Apic(registr), value);
+    } else {
+        mmioWrite(lapicMmio + registr, value, sizeof(uint32_t));
     }
 }
 
@@ -148,14 +154,23 @@ void setupInterval() {
         disableLvtTimer();
         apicWrite(LAPIC_DCR, 0b1011); // Div by 1
 
-        apicWrite(LAPIC_LVT_ICR, 0xFFFFFF);
+        apicWrite(LAPIC_LVT_ICR, 0xFFFFFFFF);
 
         uint32_t startCount = apicRead(LAPIC_LVT_CCR);
         hpetSleep(50);
         uint32_t endCount = apicRead(LAPIC_LVT_CCR);
 
-        kprintf(YUKI, "The LAPIC ticked %d times in 50 ms\n", startCount - endCount);
+        apicWrite(LAPIC_LVT_ICR, 0);
+        uint64_t ticks = startCount - endCount;
+        ticksPerNs = ticks / (50 * 1'000'000);
+
+        kprintf(YUKI, "The LAPIC ticked %d times in 50 ms\n", ticks);
+        kprintf(YUKI, "LAPIC Ticks per NS %lu\n", ticksPerNs);
     }
+}
+
+uint64_t nsToTicks(uint64_t ns) {
+    return ns * ticksPerNs;
 }
 
 void enableLapicTimer() {
@@ -185,6 +200,7 @@ void enableLapicTimer() {
 
     setupInterval();
 
+    apicWrite(LAPIC_LVT_ICR, nsToTicks(50'000'000));
     enableLvtTimer(true);
 }
 
@@ -194,7 +210,7 @@ void disableLvtTimer() {
 
 void enableLvtTimer(bool periodic) {
     if (periodic) {
-        apicWrite(LAPIC_LVT_TMR, 56 | LAPIC_TMR_PERIODIC_SHIFT);
+        apicWrite(LAPIC_LVT_TMR, (1 << 17) | 56);
     } else {
         apicWrite(LAPIC_LVT_TMR, 56);
     }
