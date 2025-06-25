@@ -16,7 +16,8 @@ set(SOURCES "kernel.cpp"
 "kernel_api.cpp"
 "sys/cpuid.cpp"
 "utils/mmio.cpp"
-"sys/lapic.cpp")
+"sys/hpet.cpp"
+"sys/apic.cpp")
 
 include(uACPI/uacpi.cmake)
 

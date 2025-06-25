@@ -20,7 +20,8 @@
 #include <uacpi/acpi.h>
 #include <inc/utils/mmio.hpp>
 #include <inc/sys/cpuid.hpp>
-#include <inc/sys/lapic.hpp>
+#include <inc/sys/hpet.hpp>
+#include <inc/sys/apic.hpp>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -177,28 +178,7 @@ extern "C" void kernelMain()
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
-    kprintf(YUKI, "Starting HPET timer...\n");
-
-    uacpi_table table;
-
-    if (uacpi_table_find_by_signature(ACPI_HPET_SIGNATURE, &table) != UACPI_STATUS_OK) {
-        kprintf(ERROR, "HPET not supported by CPU!");
-        __asm__ volatile (" hlt ");
-    }
-    acpi_hpet *hpet = reinterpret_cast<acpi_hpet *>(table.ptr);
-
-    kprintf(YUKI, "Physical Address of HPET at 0x%lx\n", hpet->address.address);
-
-    uint64_t hpet_base = (uint64_t)vmmMapPhys(hpet->address.address, 0x1000);
-
-    uint64_t gcir = mmioRead(hpet_base, sizeof(uint64_t));
-
-    uint64_t frequency = 1'000'000'000'000'000ull / (gcir >> 32);
-
-    kprintf(YUKI, "Frequency of HPET is %d\n", frequency);
-
-    kprintf(YUKI, "Enabling the Local APIC Timer...\n");
-
+    enableHpet();
     enableLapicTimer();
 
     kprintf(YUKI, "Done!\n");

@@ -30,6 +30,14 @@ isr_stub_%+%1:
     iretq
 %endmacro
 
+%macro timer_int_stub 1
+isr_stub_%+%1:
+    push rax
+    call timerHandler
+    pop rax
+    iretq
+%endmacro
+
 %macro irq_stub 1
 isr_stub_%+%1:
     push rax
@@ -40,6 +48,7 @@ isr_stub_%+%1:
 
 extern interruptHandler
 extern syscallHandler
+extern timerHandler
 extern irqHandler
 isr_no_err_stub 0
 isr_no_err_stub 1
@@ -74,16 +83,18 @@ isr_no_err_stub 29
 isr_err_stub    30
 isr_no_err_stub 31
 
-irq_stub 32     ; IRQ 0
-irq_stub 33     ; IRQ 1
-irq_stub 34     ; IRQ 2
-irq_stub 35     ; IRQ 3
-irq_stub 36     ; IRQ 4
-irq_stub 37     ; IRQ 5
-irq_stub 38     ; IRQ 6
-irq_stub 39     ; IRQ 7
+irq_stub 32     ; IRQ 0 | PIT Interrupt
+irq_stub 33     ; IRQ 1 | Keyboard Interrupt
+irq_stub 34     ; IRQ 2 | Cascade (never raised)
+irq_stub 35     ; IRQ 3 | COM2 (if enabled)
+irq_stub 36     ; IRQ 4 | COM1 (if enabled)
+irq_stub 37     ; IRQ 5 | LPT2 (if enabled)
+irq_stub 38     ; IRQ 6 | Floppy Disk
 
-isr_syscall_stub 40
+timer_int_stub 39
+timer_int_stub 40
+
+isr_syscall_stub 41
 
 global isr_stub_table
 isr_stub_table:

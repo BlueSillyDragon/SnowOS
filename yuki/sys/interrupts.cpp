@@ -47,6 +47,11 @@ extern "C" void syscallHandler() {
     return;
 }
 
+extern "C" void timerHandler() {
+    kprintf(NONE, "\nTick!\n");
+    return;
+}
+
 extern "C" void irqHandler() {
     kprintf(NONE, "\nIRQ Occured!\n");
     return;
