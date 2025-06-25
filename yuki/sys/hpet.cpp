@@ -47,7 +47,7 @@ uint64_t readHpet() {
     return count;
 }
 
-void hpetCalibrate(uint64_t ms) {
+void hpetSleep(uint64_t ms) {
     const uint64_t ticks = (ms * hpetFrequency) / 1'000;
 
     uint64_t startCount = readHpet();

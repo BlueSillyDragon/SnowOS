@@ -52,6 +52,8 @@ constexpr uint64_t Ia32ApicBaseMask = 0xffff'f000;
 
 bool x2Apic;
 
+uintptr_t lapicMmio;
+
 Cpuid cpuid;
 
 static inline void wrmsr(uint32_t msr, uint64_t value) {
@@ -143,27 +145,16 @@ void setupInterval() {
     }
 
     else {
-        apicWrite(LAPIC_DCR, 0b1011);
-        constexpr uint64_t times = 3;
+        disableLvtTimer();
+        apicWrite(LAPIC_DCR, 0b1011); // Div by 1
 
-        for (uint64_t i = 0; i < times; i++) {
-            uint64_t ms = 50;
-            apicWrite(LAPIC_LVT_ICR, 0xffffffff);
+        apicWrite(LAPIC_LVT_ICR, 0xFFFFFF);
 
-            hpetCalibrate(ms);
+        uint32_t startCount = apicRead(LAPIC_LVT_CCR);
+        hpetSleep(50);
+        uint32_t endCount = apicRead(LAPIC_LVT_CCR);
 
-            uint32_t count = apicRead(LAPIC_LVT_CCR);
-
-            apicWrite(LAPIC_LVT_ICR, 0x0);
-
-            frequency += (0xffffffff - count);
-        }
-
-        frequency /= times;
-
-        kprintf(YUKI, "LAPIC Calibrated! Timer Frequency: %lu Hz\n", frequency);
-
-        apicWrite(LAPIC_LVT_ICR, (uint32_t)frequency);
+        kprintf(YUKI, "The LAPIC ticked %d times in 50 ms\n", startCount - endCount);
     }
 }
 
@@ -187,12 +178,24 @@ void enableLapicTimer() {
 
     // Get the LAPIC Base
     uintptr_t lapicBasePhys = apicBaseMsr & Ia32ApicBaseMask;
-    uint8_t *lapic = (uint8_t *)vmmMapPhys(lapicBasePhys, 0x1000);
+    lapicMmio = (uintptr_t)vmmMapPhys(lapicBasePhys, 0x1000);
 
     apicWrite(LAPIC_TPR, 0);
     apicWrite(LAPIC_SPURIOUS_IVT_REG, (1 << 8) | 0xff);
 
     setupInterval();
 
-    apicWrite(LAPIC_LVT_TMR, 56 | LAPIC_TMR_PERIODIC_SHIFT);
+    enableLvtTimer(true);
+}
+
+void disableLvtTimer() {
+    apicWrite(LAPIC_LVT_TMR, 0);
+}
+
+void enableLvtTimer(bool periodic) {
+    if (periodic) {
+        apicWrite(LAPIC_LVT_TMR, 56 | LAPIC_TMR_PERIODIC_SHIFT);
+    } else {
+        apicWrite(LAPIC_LVT_TMR, 56);
+    }
 }
