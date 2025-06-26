@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/gdt.hpp>
+#include <inc/sys/tss.hpp>
 
 extern "C" void reloadSegs(void);
 
@@ -24,4 +25,8 @@ void initGdt()
     __asm__ volatile ("lgdt %0" :: "m"(gdtr));
     reloadSegs();
     kprintf(OK, "GDT Initialized!\n");
+}
+
+void setTss(TssDescriptor desc) {
+    gdt.tssDesc = desc;
 }

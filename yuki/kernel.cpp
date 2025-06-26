@@ -12,6 +12,7 @@
 #include <inc/io/logo.hpp>
 #include <inc/sys/gdt.hpp>
 #include <inc/sys/idt.hpp>
+#include <inc/sys/tss.hpp>
 #include <inc/mm/pmm.hpp>
 #include <inc/mm/vmm.hpp>
 #include <inc/mm/slab.hpp>
@@ -177,6 +178,7 @@ extern "C" void kernelMain()
 
     initGdt();
     initIdt();
+    initTss();
     initPmm(memmap_request.response, hhdm);
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
