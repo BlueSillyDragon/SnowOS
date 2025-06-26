@@ -22,6 +22,7 @@
 #include <inc/sys/cpuid.hpp>
 #include <inc/sys/hpet.hpp>
 #include <inc/sys/apic.hpp>
+#include <inc/sys/smp.hpp>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -67,8 +68,8 @@ volatile limine_hhdm_request hhdm_request = {
 };
 
 __attribute__((used, section(".limine_requests")))
-volatile limine_kernel_address_request executable_request = {
-    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+volatile limine_executable_address_request executable_request = {
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
     .revision = 0,
     .response = nullptr
 };
@@ -78,6 +79,14 @@ volatile limine_rsdp_request rsdp_request = {
     .id = LIMINE_RSDP_REQUEST,
     .revision = 0,
     .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_mp_request mp_request = {
+    .id = LIMINE_MP_REQUEST,
+    .revision = 0,
+    .response = nullptr,
+    .flags = 0
 };
 
 }
@@ -178,10 +187,7 @@ extern "C" void kernelMain()
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
-    enableHpet();
-    enableLapicTimer();
-
-    __asm__ volatile ("sti");
+    startCpus(mp_request.response);
 
     kprintf(YUKI, "Done!\n");
 

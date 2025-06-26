@@ -17,7 +17,8 @@ set(SOURCES "kernel.cpp"
 "sys/cpuid.cpp"
 "utils/mmio.cpp"
 "sys/hpet.cpp"
-"sys/apic.cpp")
+"sys/apic.cpp"
+"sys/smp.cpp")
 
 include(uACPI/uacpi.cmake)
 
@@ -43,6 +44,7 @@ PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O2>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=undefined>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-builtin-declaration-mismatch>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-DUACPI_BAREBONES_MODE=true>
+PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-DLIMINE_API_REVISION=3>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc>
 PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-ffreestanding>

@@ -19,8 +19,6 @@ char *memTypeToString(std::uint64_t memType)
             return "Bootloader Reclaimable Memory";
         case LIMINE_MEMMAP_USABLE:
             return "Free Memory";
-        case LIMINE_MEMMAP_KERNEL_AND_MODULES:
-            return "Kernel and Modules";
         default:
             return "Unknown Memory Type";
     }

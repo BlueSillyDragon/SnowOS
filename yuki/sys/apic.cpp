@@ -12,6 +12,8 @@
 #include <inc/sys/cpuid.hpp>
 #include <inc/sys/apic.hpp>
 
+// IoApic Defines
+
 #define IOAPIC_ID_REG 0x00
 #define IOAPIC_VERSION_REG 0x01
 #define IOAPIC_ARB_REG 0x02
@@ -44,8 +46,6 @@
 #define LAPIC_LVT_ICR 0x380
 #define LAPIC_LVT_CCR 0x390
 #define LAPIC_DCR 0x3e0
-
-#define LAPIC_TMR_PERIODIC_SHIFT 0x20000
 
 constexpr uint32_t Ia32ApicBaseMsr = 0x1b;
 constexpr uint32_t Ia32ApicBaseMask = 0xffff'f000;

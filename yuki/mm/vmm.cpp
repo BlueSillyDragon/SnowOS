@@ -36,7 +36,7 @@ uint64_t hhdmOffset;
 
 uint64_t kernelVirt = 0xffffffff80000000;
 
-void initVmm(limine_memmap_response *memoryMap, limine_kernel_address_response *kernelAddr, std::uint64_t hhdm)
+void initVmm(limine_memmap_response *memoryMap, limine_executable_address_response *kernelAddr, std::uint64_t hhdm)
 {
     kprintf(VMM, "Initializing VMM...\n");
     hhdmOffset = hhdm;
