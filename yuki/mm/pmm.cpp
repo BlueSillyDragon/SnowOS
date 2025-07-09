@@ -4,6 +4,7 @@
 #include <inc/io/kprintf.hpp>
 #include <inc/klibc/string.hpp>
 #include <inc/mm/pmm.hpp>
+#include <inc/sys/spinlock.hpp>
 
 uint64_t hhdm_offset;      // We need this to actually access the page, so that we can retrieve the next page in the free list
 
@@ -69,7 +70,7 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
         }
         endOfMem = true;
     }
-    if (((nop * 4) / 1024) < 400)   // Not all of RAM is usable, give some account for this
+    if (((nop * 4) / 1024) < 25)   // Not all of RAM is usable, give some account for this
     {
         kprintf(ERROR, "Please run SnowOS with atleast 512MB of RAM!\n");
         __asm__ volatile (" hlt ");
@@ -82,6 +83,7 @@ void initPmm(limine_memmap_response *memoryMap, uint64_t hhdm)
 
 uint64_t pmmAlloc()
 {
+    TicketSpinlock::lock();
     if (head.start >= (head.length)) // TODO: This is a temporary fix
     {
         if (head.next == nullptr) {
@@ -92,6 +94,7 @@ uint64_t pmmAlloc()
     }
     uint64_t returnPage = head.start;
     head.start += 0x1000;
+    TicketSpinlock::unlock();
 
     return returnPage;
 }

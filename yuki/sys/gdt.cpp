@@ -2,6 +2,7 @@
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/gdt.hpp>
 #include <inc/sys/tss.hpp>
+#include <inc/sys/spinlock.hpp>
 
 extern "C" void reloadSegs(void);
 
@@ -22,11 +23,17 @@ void initGdt()
     gdtr.limit = (sizeof(gdt) - 1);
 
     // Load the GDT and reload segment registers
-    __asm__ volatile ("lgdt %0" :: "m"(gdtr));
-    reloadSegs();
+    loadGdt();
     kprintf(OK, "GDT Initialized!\n");
 }
 
 void setTss(TssDescriptor desc) {
     gdt.tssDesc = desc;
+}
+
+void loadGdt() {
+    Spinlock::lock();
+    __asm__ volatile ("lgdt %0" :: "m"(gdtr));
+    reloadSegs();
+    Spinlock::unlock();
 }

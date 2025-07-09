@@ -11,6 +11,7 @@
 #include <inc/utils/mmio.hpp>
 #include <inc/sys/cpuid.hpp>
 #include <inc/sys/apic.hpp>
+#include <inc/sys/spinlock.hpp>
 
 // IoApic Defines
 
@@ -145,9 +146,12 @@ void enableIoApic() {
 }
 
 void setupInterval() {
+    TicketSpinlock::lock();
     uint64_t frequency = 0;
     if (getCpuid(0x15).ecx != 0) {
+        TicketSpinlock::unlock();
         kprintf(YUKI, "Getting Crystal Clock frequency...\n");
+        TicketSpinlock::lock();
     }
 
     else {
@@ -164,6 +168,8 @@ void setupInterval() {
         uint64_t ticks = startCount - endCount;
         ticksPerNs = ticks / (50 * 1'000'000);
 
+        TicketSpinlock::unlock();
+
         kprintf(YUKI, "The LAPIC ticked %d times in 50 ms\n", ticks);
         kprintf(YUKI, "LAPIC Ticks per NS %lu\n", ticksPerNs);
     }
@@ -174,6 +180,7 @@ uint64_t nsToTicks(uint64_t ns) {
 }
 
 void enableLapicTimer() {
+    TicketSpinlock::lock();
     // Get the APIC MSR and set the Global Bit
     uint64_t apicBaseMsr = rdmsr(Ia32ApicBaseMsr);
     apicBaseMsr |= (1 << 11);
@@ -181,11 +188,15 @@ void enableLapicTimer() {
     cpuid = getCpuid(1);
 
     if (cpuid.ecx & 1 << 21) {
+        TicketSpinlock::unlock();
         kprintf(YUKI, "x2APIC is Available!\n");
+        TicketSpinlock::lock();
         apicBaseMsr |= (1 << 10);
         x2Apic = true;
     } else {
+        TicketSpinlock::unlock();
         kprintf(YUKI, "No x2APIC =c, using old version\n");
+        TicketSpinlock::lock();
         x2Apic = false;
     }
 
@@ -193,15 +204,23 @@ void enableLapicTimer() {
 
     // Get the LAPIC Base
     uintptr_t lapicBasePhys = apicBaseMsr & Ia32ApicBaseMask;
+
+    TicketSpinlock::unlock();
     lapicMmio = (uintptr_t)vmmMapPhys(lapicBasePhys, 0x1000);
+    TicketSpinlock::lock();
 
     apicWrite(LAPIC_TPR, 0);
     apicWrite(LAPIC_SPURIOUS_IVT_REG, (1 << 8) | 0xff);
 
+    TicketSpinlock::unlock();
     setupInterval();
+    TicketSpinlock::lock();
 
     apicWrite(LAPIC_LVT_ICR, nsToTicks(50'000'000));
     enableLvtTimer(true);
+
+    TicketSpinlock::unlock();
+    kprintf(NONE, "HIT!\n");
 }
 
 void disableLvtTimer() {

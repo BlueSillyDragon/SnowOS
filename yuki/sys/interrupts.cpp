@@ -2,6 +2,7 @@
 #include <inc/sys/panic.hpp>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/apic.hpp>
+#include <inc/sys/spinlock.hpp>
 
 char *panicArt = "   ____________    _______________________________\n"
 "  /            \\   |                              |\n"
@@ -49,12 +50,9 @@ extern "C" void syscallHandler() {
 }
 
 extern "C" void timerHandler() {
-    __asm__ volatile ("cli");
-
-    kprintf(NONE, "\nTick!\n");
+    TicketSpinlock::lock();
     apicWrite(0xb0, 0);
-
-    __asm__ volatile ("sti");
+    TicketSpinlock::unlock();
 }
 
 extern "C" void irqHandler() {

@@ -189,7 +189,12 @@ extern "C" void kernelMain()
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
+    enableHpet();
+    enableLapicTimer();
+
     startCpus(mp_request.response);
+
+    __asm__ __volatile__ ("sti");
 
     kprintf(YUKI, "Done!\n");
 

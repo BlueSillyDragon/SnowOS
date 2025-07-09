@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/idt.hpp>
+#include <inc/sys/spinlock.hpp>
 
 extern void* isr_stub_table[];
 
@@ -32,6 +33,12 @@ void initIdt()
     idtSetDescriptor(255, isr_stub_table[40], 0x8e);
     idtSetDescriptor(0x60, isr_stub_table[41], 0x8e);
 
-    __asm__ __volatile__ ("lidt %0" :: "m"(idtr));
+    loadIdt();
     kprintf(OK, "IDT Initialized!\n");
+}
+
+void loadIdt() {
+    Spinlock::lock();
+   __asm__ __volatile__ ("lidt %0" :: "m"(idtr)); 
+   Spinlock::unlock();
 }

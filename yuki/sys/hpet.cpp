@@ -6,6 +6,7 @@
 #include <uacpi/tables.h>
 #include <uacpi/acpi.h>
 #include <inc/sys/hpet.hpp>
+#include <inc/sys/spinlock.hpp>
 
 #define HPET_COUNTER 0xf0
 #define HPET_COUNTER_CLK_PERIOD_SHIFT 32

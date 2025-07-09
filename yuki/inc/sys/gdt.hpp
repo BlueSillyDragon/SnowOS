@@ -27,3 +27,4 @@ typedef struct
 
 void initGdt();
 void setTss(TssDescriptor tssDesc);
+void loadGdt();

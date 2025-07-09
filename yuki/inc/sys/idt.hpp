@@ -20,3 +20,4 @@ typedef struct
 } __attribute__((packed)) idt_entry_t;
 
 void initIdt();
+void loadIdt();
