@@ -220,7 +220,6 @@ void enableLapicTimer() {
     enableLvtTimer(true);
 
     TicketSpinlock::unlock();
-    kprintf(NONE, "HIT!\n");
 }
 
 void disableLvtTimer() {

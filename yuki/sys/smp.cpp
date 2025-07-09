@@ -13,7 +13,10 @@ void cpuInit() {
     loadIdt();
     setCr3();
     enableLapicTimer();
-    __asm__ __volatile__ (" hlt ");
+    
+    for (;;) {
+        __asm__ __volatile__ (" hlt ");
+    }
 }
 
 void startCpus(limine_mp_response *mp_response) {

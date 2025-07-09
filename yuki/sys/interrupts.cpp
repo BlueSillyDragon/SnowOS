@@ -22,6 +22,7 @@ char *panicArt = "   ____________    _______________________________\n"
 "\\    /\n"
 " \\__/\n";
 
+
 extern "C" void kernelPanic(char *errorMsg) {
     kprintf(NONE, "[ " ANSI_RED  "KERNEL PANIC!" ANSI_RESET "] Reason: ");
 
@@ -35,7 +36,6 @@ extern "C" void kernelPanic(char *errorMsg) {
 }
 
 __attribute__((noreturn))
-extern "C" void interruptHandler(void);
 extern "C" void interruptHandler() {
     __asm__ volatile ("cli");
 
