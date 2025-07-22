@@ -20,4 +20,4 @@ void remapPage(uint64_t virtualAddr);
 void *vmmMapPhys(uint64_t physicalAddr, uint64_t length);
 void vmmUnmapVirt(void *virtualAddr, uint64_t length);
 
-void setCr3();
+extern "C" void setCr3();

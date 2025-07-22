@@ -21,7 +21,9 @@ set(SOURCES "kernel.cpp"
 "utils/mmio.cpp"
 "sys/hpet.cpp"
 "sys/apic.cpp"
-"sys/smp.cpp")
+"sys/smp.cpp"
+"sched/scheduler.cpp"
+"sched/switch.asm")
 
 include(uACPI/uacpi.cmake)
 
@@ -77,6 +79,8 @@ PRIVATE $<$<COMPILE_LANGUAGE:C>:-O2>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-fsanitize=undefined>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-builtin-declaration-mismatch>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-DUACPI_BAREBONES_MODE=true>
+PRIVATE $<$<COMPILE_LANGUAGE:C>:-DLIMINE_API_REVISION=3>
+PRIVATE $<$<COMPILE_LANGUAGE:C>:-DDO_UNIT_TESTS>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wextra>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-nostdinc>
 PRIVATE $<$<COMPILE_LANGUAGE:C>:-ffreestanding>

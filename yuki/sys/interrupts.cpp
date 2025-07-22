@@ -23,6 +23,8 @@ char *panicArt = "   ____________    _______________________________\n"
 " \\__/\n";
 
 
+extern "C" void yield();
+
 extern "C" void kernelPanic(char *errorMsg) {
     kprintf(NONE, "[ " ANSI_RED  "KERNEL PANIC!" ANSI_RESET "] Reason: ");
 
@@ -50,9 +52,8 @@ extern "C" void syscallHandler() {
 }
 
 extern "C" void timerHandler() {
-    TicketSpinlock::lock();
     apicWrite(0xb0, 0);
-    TicketSpinlock::unlock();
+    yield();
 }
 
 extern "C" void irqHandler() {

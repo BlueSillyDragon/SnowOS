@@ -24,6 +24,7 @@
 #include <inc/sys/hpet.hpp>
 #include <inc/sys/apic.hpp>
 #include <inc/sys/smp.hpp>
+#include <inc/sched/scheduler.hpp>
 
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
@@ -136,6 +137,13 @@ uint32_t testColor = 0x23272E;
 
 uint64_t rsdp;
 
+
+void *threadA(void *args);
+void *threadB(void *args);
+void *threadC(void *args);
+void *threadD(void *args);
+void *threadE(void *args);
+
 extern "C" void kernelMain()
 {
     // Ensure the bootloader actually understands our base revision (see spec).
@@ -173,7 +181,7 @@ extern "C" void kernelMain()
 
     setFtCtx(ftCtx);
 
-    kprintf(NONE, kernel_logo);
+    kprintf(NONE, kernelLogo);
     kprintf(NONE, "\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
 
     initGdt();
@@ -196,8 +204,65 @@ extern "C" void kernelMain()
 
     __asm__ __volatile__ ("sti");
 
+    initScheduler(hhdm);
+
+    int rc = newProcess(threadA);
+    rc = newProcess(threadB);
+    rc = newProcess(threadC);
+    rc = newProcess(threadD);
+    rc = newProcess(threadE);
+
     kprintf(YUKI, "Done!\n");
 
     // We're done, just hang...
     hcf();
+}
+
+void *threadA(void *args) {
+    bool myBool = true;
+
+    hcf();
+
+    kprintf(NONE, "This\n");
+    kprintf(NONE, "should\n");
+    kprintf(NONE, "take\n");
+    kprintf(NONE, "a\n");
+    kprintf(NONE, "while\n");
+    kprintf(NONE, "to\n");
+    kprintf(NONE, "complete\n");
+    kprintf(NONE, "SnowOS is awesome!\n");
+
+    return nullptr;
+}
+
+void *threadB(void *args) {
+    bool myBool = true;
+
+    kprintf(NONE, "Hello from thread B!\n");
+
+    return nullptr;
+}
+
+void *threadC(void *args) {
+    bool myBool = true;
+
+    kprintf(NONE, "Hello from thread C!\n");
+
+    return nullptr;
+}
+
+void *threadD(void *args) {
+    bool myBool = true;
+
+    kprintf(NONE, "Hello from thread D!\n");
+
+    return nullptr;
+}
+
+void *threadE(void *args) {
+    bool myBool = true;
+
+    kprintf(NONE, "Hello from thread E!\n");
+    
+    return nullptr;
 }

@@ -30,7 +30,7 @@ extern uint64_t _kernelRodataStart;
 extern uint64_t _kernelRodataEnd;
 extern uint64_t _kernelVirtualEnd;
 
-pagemap_t pagemap;
+pagemap_t kernelPagemap;
 
 uint64_t hhdmOffset;
 
@@ -40,8 +40,8 @@ void initVmm(limine_memmap_response *memoryMap, limine_executable_address_respon
 {
     kprintf(VMM, "Initializing VMM...\n");
     hhdmOffset = hhdm;
-    pagemap.topLevel = pmmAlloc();
-    memset(reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdm), 0x0, 0x1000);
+    kernelPagemap.topLevel = pmmAlloc();
+    memset(reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdm), 0x0, 0x1000);
 
     uint64_t oldCr3 = 0;
 
@@ -76,7 +76,7 @@ void initVmm(limine_memmap_response *memoryMap, limine_executable_address_respon
         }
     }
 
-    __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(pagemap.topLevel) : "memory");
+    __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(kernelPagemap.topLevel) : "memory");
 
     kprintf(VMM, "VMM Initialized!\n");
 }
@@ -117,7 +117,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
         __asm__ volatile (" hlt ");
     }
 
-    uint64_t *pml4 = reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdmOffset);
+    uint64_t *pml4 = reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdmOffset);
     uint64_t *pdpt, *pd, *pt;
 
     if (!(pml4[PML4_ID(virtualAddr)] & ptePresent))
@@ -149,7 +149,7 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
 
 void unmapPage(uint64_t virtualAddr) {
     Spinlock::lock();
-    uint64_t *pml4 = reinterpret_cast<uint64_t *>(pagemap.topLevel + hhdmOffset);
+    uint64_t *pml4 = reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdmOffset);
     uint64_t *pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
@@ -214,10 +214,10 @@ void vmmUnmapVirt(void *virtualAddr, size_t length) {
     unmapPages(alignedVA, length);
 }
 
-void setCr3() {
+extern "C" void setCr3() {
     TicketSpinlock::lock();
 
-    __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(pagemap.topLevel) : "memory");
+    __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(kernelPagemap.topLevel) : "memory");
 
     TicketSpinlock::unlock();
 }
