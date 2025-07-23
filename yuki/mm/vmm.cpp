@@ -202,6 +202,19 @@ void vmmUnmapVirt(void *virtualAddr, size_t length) {
     unmapPages(alignedVA, length);
 }
 
+pagemap_t newPagemap() {
+    pagemap_t newPm;
+
+    newPm.topLevel = pmmAlloc();
+    memset(reinterpret_cast<uint64_t *>(newPm.topLevel + hhdmOffset), 0x0, 0x1000);
+
+    for (int i = 256; i < 512; i++) {
+        reinterpret_cast<uint64_t *>(newPm.topLevel + hhdmOffset)[i] = reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdmOffset)[i];
+    }
+
+    return newPm;
+}
+
 extern "C" void setCr3() {
     __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(kernelPagemap.topLevel) : "memory");
 }

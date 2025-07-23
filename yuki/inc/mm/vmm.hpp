@@ -21,3 +21,5 @@ void *vmmMapPhys(uint64_t physicalAddr, uint64_t length);
 void vmmUnmapVirt(void *virtualAddr, uint64_t length);
 
 extern "C" void setCr3();
+
+pagemap_t newPagemap();

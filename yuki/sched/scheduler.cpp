@@ -29,6 +29,8 @@ struct Thread {
     uint64_t rip;
 
     Thread *nextThread;
+
+    uint64_t *parentProc;
 };
 
 struct Process {
@@ -72,6 +74,8 @@ int newProcess(void *(*startFunction) (void *)) {
 
     setupContext(thread);
 
+    thread->parentProc = reinterpret_cast<uint64_t *>(proc);
+
     thread->nextThread = queueHead;
     
     if (queueHead != nullptr) {
@@ -81,6 +85,10 @@ int newProcess(void *(*startFunction) (void *)) {
     queueHead = thread;
 
     currentThread = thread;
+
+    proc->pagemap = newPagemap();
+
+    kprintf(SCHEDULER, "Process struct located at: 0x%lx\n", proc);
 
     nextPid++;
     __asm__ __volatile__ (" sti ");
@@ -104,5 +112,11 @@ extern "C" void yield() {
     }
 
     kprintf(SCHEDULER, "Running Thread: %lu\n", currentThread->tid);
+
+    Process *parent = (Process *)currentThread->parentProc;
+
+    kprintf(YUKI, "Loading pagemap located at: 0x%lx\n", parent->pagemap.topLevel);
+
+    __asm__ __volatile__ ("mov %0, %%cr3" :: "a"(parent->pagemap.topLevel));
     contextSwitch(oldThread, currentThread);
 }

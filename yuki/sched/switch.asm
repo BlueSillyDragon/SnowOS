@@ -42,6 +42,7 @@ contextSwitch:
     push r14
     push r15
 
+    ; Load new stack
     mov [rdi + 64], rsp
     mov rsp, [rsi + 64]
 
@@ -52,8 +53,6 @@ contextSwitch:
     pop r12
     pop rbp
     pop rbx
-
-    mov rax, 0xcafebabe
 
     iretq
 
