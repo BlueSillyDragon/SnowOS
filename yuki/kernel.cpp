@@ -1,6 +1,9 @@
+#include "inc/sys/spinlock.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
+#include <requests.hpp>
+#include <inc/utils/helpers.hpp>
 #include <inc/klibc/string.hpp>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
@@ -29,93 +32,6 @@
 #define KERNEL_MAJOR 0
 #define KERNEL_MINOR 1
 #define KERNEL_PATCH 0  
-
-// Set the base revision to 3, this is recommended as this is the latest
-// base revision described by the Limine boot protocol specification.
-// See specification for further info.
-
-namespace {
-
-__attribute__((used, section(".limine_requests")))
-volatile LIMINE_BASE_REVISION(3);
-
-}
-
-// The Limine requests can be placed anywhere, but it is important that
-// the compiler does not optimise them away, so, usually, they should
-// be made volatile or equivalent, _and_ they should be accessed at least
-// once or marked as used with the "used" attribute as done here.
-
-namespace {
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_memmap_request memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_hhdm_request hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_executable_address_request executable_request = {
-    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_rsdp_request rsdp_request = {
-    .id = LIMINE_RSDP_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_mp_request mp_request = {
-    .id = LIMINE_MP_REQUEST,
-    .revision = 0,
-    .response = nullptr,
-    .flags = 0
-};
-
-}
-
-// Finally, define the start and end markers for the Limine requests.
-// These can also be moved anywhere, to any .cpp file, as seen fit.
-
-namespace {
-
-__attribute__((used, section(".limine_requests_start")))
-volatile LIMINE_REQUESTS_START_MARKER;
-
-__attribute__((used, section(".limine_requests_end")))
-volatile LIMINE_REQUESTS_END_MARKER;
-
-}
-
-// Halt and catch fire function.
-namespace {
-
-void hcf() {
-    for (;;) {
-        asm ("hlt");
-    }
-}
-
-}
 
 // The following stubs are required by the Itanium C++ ABI (the one we use,
 // regardless of the "Itanium" nomenclature).
@@ -163,10 +79,7 @@ extern "C" void kernelMain()
 
     hhdm = hhdm_request.response->offset;
 
-    if (serialInit() == 1)
-    {
-        hcf();
-    }
+    serialInit();
 
     // Ensure we got a framebuffer.
     if (framebuffer_request.response == nullptr
@@ -187,6 +100,7 @@ extern "C" void kernelMain()
     initGdt();
     initIdt();
     initTss();
+
     initPmm(memmap_request.response, hhdm);
     initVmm(memmap_request.response, executable_request.response, hhdm);
     initSlab(hhdm);
@@ -199,10 +113,6 @@ extern "C" void kernelMain()
 
     enableHpet();
     enableLapicTimer();
-
-    startCpus(mp_request.response);
-
-    __asm__ __volatile__ ("sti");
 
     initScheduler(hhdm);
 
@@ -221,7 +131,7 @@ extern "C" void kernelMain()
 void *threadA(void *args) {
     bool myBool = true;
 
-    hcf();
+    TicketSpinlock::lock();
 
     kprintf(NONE, "This\n");
     kprintf(NONE, "should\n");
@@ -231,6 +141,8 @@ void *threadA(void *args) {
     kprintf(NONE, "to\n");
     kprintf(NONE, "complete\n");
     kprintf(NONE, "SnowOS is awesome!\n");
+
+    TicketSpinlock::unlock();
 
     return nullptr;
 }

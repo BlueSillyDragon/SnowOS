@@ -36,7 +36,6 @@ void putchar(int ch, void *ctx) {
 
 void kprintf(INFO info, const char *string, ...)
 {
-    TicketSpinlock::lock();
     std::va_list arg;
     va_start(arg, string);
 
@@ -81,7 +80,6 @@ void kprintf(INFO info, const char *string, ...)
     // Make sure to clear the buffer
     memset(buf, 0, sizeof(buf));
     idx = 0;
-    TicketSpinlock::unlock();
 }
 
 void kvprintf(INFO info, const char *string, std::va_list arg)

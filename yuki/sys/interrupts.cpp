@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <inc/sys/panic.hpp>
+#include <inc/utils/helpers.hpp>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/apic.hpp>
 #include <inc/sys/spinlock.hpp>
@@ -35,6 +36,8 @@ extern "C" void kernelPanic(char *errorMsg) {
     }
 
     kprintf(NONE, panicArt);
+
+    hcf();
 }
 
 __attribute__((noreturn))

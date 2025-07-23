@@ -1,5 +1,6 @@
 #include "inc/sys/hpet.hpp"
 #include <cstdint>
+#include <inc/utils/helpers.hpp>
 #include <inc/klibc/string.hpp>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/panic.hpp>
@@ -57,18 +58,6 @@ uintptr_t lapicMmio;
 uint64_t ticksPerNs;
 
 Cpuid cpuid;
-
-static inline void wrmsr(uint32_t msr, uint64_t value) {
-    uint32_t lo = value & 0xffffffff;
-    uint32_t hi = value >> 32;
-    asm volatile("wrmsr" ::"c"(msr), "a"(lo), "d"(hi) : "memory");
-}
-
-static inline uint64_t rdmsr(uint32_t msr) {
-    uint64_t lo, hi;
-    asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr));
-    return (hi << 32U) | lo;
-}
 
 uint32_t toX2Apic(const uint32_t registr) {
     return (registr >> 4) + 0x800;
@@ -142,16 +131,15 @@ void enableIoApic() {
 
     kprintf(YUKI, "IOAPIC version 0x%x\n", apicVer);
 
-    __asm__ __volatile__ (" hlt ");
+    hcf();
 }
 
 void setupInterval() {
-    TicketSpinlock::lock();
     uint64_t frequency = 0;
     if (getCpuid(0x15).ecx != 0) {
-        TicketSpinlock::unlock();
         kprintf(YUKI, "Getting Crystal Clock frequency...\n");
-        TicketSpinlock::lock();
+        frequency = getCpuid(0x15).ecx;
+        kprintf(YUKI, "Frequency is: %lu\n", frequency);
     }
 
     else {
@@ -168,8 +156,6 @@ void setupInterval() {
         uint64_t ticks = startCount - endCount;
         ticksPerNs = ticks / (50 * 1'000'000);
 
-        TicketSpinlock::unlock();
-
         kprintf(YUKI, "The LAPIC ticked %d times in 50 ms\n", ticks);
         kprintf(YUKI, "LAPIC Ticks per NS %lu\n", ticksPerNs);
     }
@@ -180,7 +166,6 @@ uint64_t nsToTicks(uint64_t ns) {
 }
 
 void enableLapicTimer() {
-    TicketSpinlock::lock();
     // Get the APIC MSR and set the Global Bit
     uint64_t apicBaseMsr = rdmsr(Ia32ApicBaseMsr);
     apicBaseMsr |= (1 << 11);
@@ -188,15 +173,11 @@ void enableLapicTimer() {
     cpuid = getCpuid(1);
 
     if (cpuid.ecx & 1 << 21) {
-        TicketSpinlock::unlock();
         kprintf(YUKI, "x2APIC is Available!\n");
-        TicketSpinlock::lock();
         apicBaseMsr |= (1 << 10);
         x2Apic = true;
     } else {
-        TicketSpinlock::unlock();
         kprintf(YUKI, "No x2APIC =c, using old version\n");
-        TicketSpinlock::lock();
         x2Apic = false;
     }
 
@@ -205,21 +186,15 @@ void enableLapicTimer() {
     // Get the LAPIC Base
     uintptr_t lapicBasePhys = apicBaseMsr & Ia32ApicBaseMask;
 
-    TicketSpinlock::unlock();
     lapicMmio = (uintptr_t)vmmMapPhys(lapicBasePhys, 0x1000);
-    TicketSpinlock::lock();
 
     apicWrite(LAPIC_TPR, 0);
     apicWrite(LAPIC_SPURIOUS_IVT_REG, (1 << 8) | 0xff);
 
-    TicketSpinlock::unlock();
     setupInterval();
-    TicketSpinlock::lock();
 
     apicWrite(LAPIC_LVT_ICR, nsToTicks(50'000'000));
     enableLvtTimer(true);
-
-    TicketSpinlock::unlock();
 }
 
 void disableLvtTimer() {

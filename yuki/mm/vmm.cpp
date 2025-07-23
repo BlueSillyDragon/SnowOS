@@ -1,3 +1,4 @@
+#include "inc/sys/panic.hpp"
 #include <cstdint>
 #include <limine.h>
 #include <inc/klibc/string.hpp>
@@ -12,6 +13,7 @@ constexpr uint64_t pteWrite = 0x2;
 constexpr uint64_t pteUser = 0x4;
 constexpr uint64_t ptePwt = 0x8;
 constexpr uint64_t ptePcd = 0x10;
+constexpr uint64_t pteNx = 0x8000000000000000;
 constexpr uint64_t pteAddress = 0x0000fffffffff000;
 
 constexpr uint64_t uAcpiMapBase = 0xffff'a000'0000'0000;
@@ -43,10 +45,6 @@ void initVmm(limine_memmap_response *memoryMap, limine_executable_address_respon
     kernelPagemap.topLevel = pmmAlloc();
     memset(reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdm), 0x0, 0x1000);
 
-    uint64_t oldCr3 = 0;
-
-    __asm__ __volatile__ ("mov %%cr3, %%rax; mov %%rax, %0" : "=a"(oldCr3));
-
     kprintf(VMM, "Mapping higher-half direct map...\n");
 
     for(uint64_t i = 0; i < memoryMap->entry_count; i++)
@@ -70,9 +68,9 @@ void initVmm(limine_memmap_response *memoryMap, limine_executable_address_respon
 
     for (uint64_t i = 0; (kernelAddr->virtual_base + i) < (uint64_t)&_kernelVirtualEnd; i += 0x1000) {
         if (i >= (uint64_t)&_kernelCodeStart && i <= (uint64_t)&_kernelRodataEnd) {
-            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, 0x1);
+            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, ptePresent);
         } else {
-            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, 0x3);
+            mapPage(kernelAddr->virtual_base + i, kernelAddr->physical_base + i, ptePresent | pteWrite | pteNx);
         }
     }
 
@@ -110,7 +108,6 @@ uint64_t createPte(uint64_t physicalAddr, uint64_t flags)
 
 void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
 {
-    Spinlock::lock();
     if (virtualAddr % 0x1000 != 0 || physicalAddr % 0x1000 != 0)
     {
         kprintf(ERROR, "Attempted to map a virtual address or physical address that was not aligned to 4KB!\n");
@@ -144,26 +141,22 @@ void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags)
     }
     pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     pt[PT_ID(virtualAddr)] = createPte(physicalAddr, flags);
-    Spinlock::unlock();
 }
 
 void unmapPage(uint64_t virtualAddr) {
-    Spinlock::lock();
     uint64_t *pml4 = reinterpret_cast<uint64_t *>(kernelPagemap.topLevel + hhdmOffset);
     uint64_t *pdpt = reinterpret_cast<uint64_t *>((pml4[PML4_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pd = reinterpret_cast<uint64_t *>((pdpt[PDPT_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     uint64_t *pt = reinterpret_cast<uint64_t *>((pd[PD_ID(virtualAddr)] & pteAddress) + hhdmOffset);
     pt[PT_ID(virtualAddr)] = 0;
     __asm__ __volatile__ (" invlpg (%0) " :: "a"(virtualAddr));
-    Spinlock::unlock();
 }
 
 void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uint64_t count)
 {
     if (virtualStart % 0x1000 != 0 || physicalStart % 0x1000 != 0 || count % 0x1000 != 0)
     {
-        kprintf(ERROR, "Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
-        __asm__ volatile (" hlt ");
+        kernelPanic("Attempted to map multiple virtual addresses or physical addresses or count that was not aligned to 4KB!\n");
     }
 
     for (uint64_t i = 0; i < count; i += 0x1000) {
@@ -174,8 +167,7 @@ void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uin
 void unmapPages(uint64_t virtualStart, uint64_t count) {
     if (virtualStart % 0x1000 != 0 || count % 0x1000 != 0)
     {
-        kprintf(ERROR, "Attempted to unmap multiple virtual addresses or count that was not aligned to 4KB!\n");
-        __asm__ volatile (" hlt ");
+        kernelPanic("Attempted to unmap multiple virtual addresses or count that was not aligned to 4KB!\n");
     }
 
     for (uint64_t i = 0; i < count; i += 0x1000) {
@@ -184,7 +176,6 @@ void unmapPages(uint64_t virtualStart, uint64_t count) {
 }
 
 void *vmmMapPhys(uint64_t physicalAddr, size_t length) {
-    TicketSpinlock::lock();
     // First, round down the physical address
     uint64_t alignedPA = (physicalAddr & ~0xfff);
 
@@ -193,14 +184,11 @@ void *vmmMapPhys(uint64_t physicalAddr, size_t length) {
     length = (length & ~0xfff) + 0x2000;
 
     uint64_t virtualAddr = (uAcpiMapBase + (totalPages * 0x1000));
-
-    TicketSpinlock::unlock();
     
     mapPages(virtualAddr, alignedPA, 0x3, length);
-    TicketSpinlock::lock();
 
     totalPages += (length / 0x1000) - 1;
-    TicketSpinlock::unlock();
+
     return (void *)(virtualAddr + (physicalAddr - alignedPA));
 }
 
@@ -215,9 +203,5 @@ void vmmUnmapVirt(void *virtualAddr, size_t length) {
 }
 
 extern "C" void setCr3() {
-    TicketSpinlock::lock();
-
     __asm__ __volatile__ ("mov %0, %%cr3" :: "r"(kernelPagemap.topLevel) : "memory");
-
-    TicketSpinlock::unlock();
 }

@@ -1,4 +1,5 @@
 set(SOURCES "kernel.cpp"
+"utils/helpers.cpp"
 "io/terminal.cpp"
 "io/kprintf.cpp"
 "io/serial.cpp"

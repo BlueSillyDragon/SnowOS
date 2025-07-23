@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <inc/io/serial.hpp>
 
+bool isSerialEnabled;
+
 static inline void outb(uint16_t port, uint8_t value) {
     asm volatile("outb %0, %1" : : "a"(value), "Nd"(port));
 }
@@ -25,10 +27,13 @@ int serialInit()
 
     if (inb(PORT + 0) != 0xAE)
     {
+        isSerialEnabled = false;
         return 1;
     }
 
     outb(PORT + 4, 0x0F);
+
+    isSerialEnabled = true;
     return 0;
 }
 
@@ -37,6 +42,9 @@ int is_transmit_empty() {
 }
 
 void writeSerial(char a) {
+    if (!isSerialEnabled) {
+        return;
+    }
    while (is_transmit_empty() == 0);
 
    outb(PORT,a);
@@ -44,6 +52,9 @@ void writeSerial(char a) {
 
 void stringToSerial(char *string)
 {
+    if (!isSerialEnabled) {
+        return;
+    }
     std::uint64_t i = 0;
     while(string[i] != '\0')
     {

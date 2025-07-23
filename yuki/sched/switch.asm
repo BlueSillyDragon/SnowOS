@@ -53,6 +53,8 @@ contextSwitch:
     pop rbp
     pop rbx
 
+    mov rax, 0xcafebabe
+
     iretq
 
 .returnPoint:
