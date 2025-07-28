@@ -2,24 +2,9 @@
 
 #include <cstdint>
 #include <limine.h>
-
-typedef struct 
-{
-    uint64_t levels;
-    uint64_t topLevel;
-} pagemap_t;
+#include <inc/mm/paging.hpp>
 
 uint64_t createPte(uint64_t physicalAddr, uint64_t flags);
-void initVmm(limine_memmap_response *memoryMap, limine_executable_address_response *kernelAddr, std::uint64_t hhdm);
-void mapPage(uint64_t virtualAddr, uint64_t physicalAddr, uint64_t flags);
-void mapPages(uint64_t virtualStart, uint64_t physicalStart, uint64_t flags, uint64_t count);
-void unmapPage(uint64_t virtualAddr);
-void unmapPages(uint64_t virtualStart, uint64_t count);
-void remapPage(uint64_t virtualAddr);
-
+void initVmm(limine_memmap_response *memoryMap, limine_executable_address_response *kernelAddr);
 void *vmmMapPhys(uint64_t physicalAddr, uint64_t length);
 void vmmUnmapVirt(void *virtualAddr, uint64_t length);
-
-extern "C" void setCr3();
-
-pagemap_t newPagemap();

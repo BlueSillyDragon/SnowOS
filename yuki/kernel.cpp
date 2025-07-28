@@ -1,8 +1,6 @@
-#include "inc/sys/spinlock.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
-#include <requests.hpp>
 #include <inc/utils/helpers.hpp>
 #include <inc/klibc/string.hpp>
 #include <flanterm.h>
@@ -26,12 +24,16 @@
 #include <inc/sys/cpuid.hpp>
 #include <inc/sys/hpet.hpp>
 #include <inc/sys/apic.hpp>
+#include <inc/sys/spinlock.hpp>
 #include <inc/sys/smp.hpp>
 #include <inc/sched/scheduler.hpp>
 
-#define KERNEL_MAJOR 0
-#define KERNEL_MINOR 1
-#define KERNEL_PATCH 0  
+constexpr uint64_t yukiMajor = 0;
+constexpr uint64_t yukiMinor = 1;
+constexpr uint64_t yukiPatch = 0;
+
+
+// Limine stuff
 
 // The following stubs are required by the Itanium C++ ABI (the one we use,
 // regardless of the "Itanium" nomenclature).
@@ -46,6 +48,84 @@ extern "C" {
 // Extern declarations for global constructors array.
 extern void (*__init_array[])();
 extern void (*__init_array_end[])();
+
+// Set the base revision to 3, this is recommended as this is the latest
+// base revision described by the Limine boot protocol specification.
+// See specification for further info.
+
+namespace {
+
+__attribute__((used, section(".limine_requests")))
+volatile LIMINE_BASE_REVISION(3);
+
+}
+
+// The Limine requests can be placed anywhere, but it is important that
+// the compiler does not optimise them away, so, usually, they should
+// be made volatile or equivalent, _and_ they should be accessed at least
+// once or marked as used with the "used" attribute as done here.
+
+namespace {
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_framebuffer_request framebuffer_request = {
+    .id = LIMINE_FRAMEBUFFER_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_executable_address_request executable_request = {
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_mp_request mp_request = {
+    .id = LIMINE_MP_REQUEST,
+    .revision = 0,
+    .response = nullptr,
+    .flags = 0
+};
+
+}
+
+// Finally, define the start and end markers for the Limine requests.
+// These can also be moved anywhere, to any .cpp file, as seen fit.
+
+namespace {
+
+__attribute__((used, section(".limine_requests_start")))
+volatile LIMINE_REQUESTS_START_MARKER;
+
+__attribute__((used, section(".limine_requests_end")))
+volatile LIMINE_REQUESTS_END_MARKER;
+
+}
+
+// End of Limine stuff
 
 uint64_t hhdm;
 
@@ -95,14 +175,14 @@ extern "C" void kernelMain()
     setFtCtx(ftCtx);
 
     kprintf(NONE, kernelLogo);
-    kprintf(NONE, "\n\tYuki Version %d.%d.%d\n\n", KERNEL_MAJOR, KERNEL_MINOR, KERNEL_PATCH);
+    kprintf(NONE, "\n\tYuki Version %d.%d.%d\n\n", yukiMajor, yukiMinor, yukiPatch);
 
     initGdt();
     initIdt();
     initTss();
 
     initPmm(memmap_request.response, hhdm);
-    initVmm(memmap_request.response, executable_request.response, hhdm);
+    initVmm(memmap_request.response, executable_request.response);
     initSlab(hhdm);
 
     rsdp = (uint64_t)rsdp_request.response->address;
@@ -114,67 +194,12 @@ extern "C" void kernelMain()
     enableHpet();
     enableLapicTimer();
 
-    initScheduler(hhdm);
-
-    int rc = newProcess(threadA);
-    rc = newProcess(threadB);
-    rc = newProcess(threadC);
-    rc = newProcess(threadD);
-    rc = newProcess(threadE);
-
     kprintf(YUKI, "Done!\n");
 
     // We're done, just hang...
     hcf();
 }
 
-void *threadA(void *args) {
-    bool myBool = true;
-
-    TicketSpinlock::lock();
-
-    kprintf(NONE, "This\n");
-    kprintf(NONE, "should\n");
-    kprintf(NONE, "take\n");
-    kprintf(NONE, "a\n");
-    kprintf(NONE, "while\n");
-    kprintf(NONE, "to\n");
-    kprintf(NONE, "complete\n");
-    kprintf(NONE, "SnowOS is awesome!\n");
-
-    TicketSpinlock::unlock();
-
-    return nullptr;
-}
-
-void *threadB(void *args) {
-    bool myBool = true;
-
-    kprintf(NONE, "Hello from thread B!\n");
-
-    return nullptr;
-}
-
-void *threadC(void *args) {
-    bool myBool = true;
-
-    kprintf(NONE, "Hello from thread C!\n");
-
-    return nullptr;
-}
-
-void *threadD(void *args) {
-    bool myBool = true;
-
-    kprintf(NONE, "Hello from thread D!\n");
-
-    return nullptr;
-}
-
-void *threadE(void *args) {
-    bool myBool = true;
-
-    kprintf(NONE, "Hello from thread E!\n");
-    
-    return nullptr;
+uint64_t getHhdm() {
+    return hhdm;
 }

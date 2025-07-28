@@ -1,11 +1,10 @@
-#include <cstdint>
 #include <inc/sys/panic.hpp>
 #include <inc/utils/helpers.hpp>
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/apic.hpp>
 #include <inc/sys/spinlock.hpp>
 
-char *panicArt = "   ____________    _______________________________\n"
+const char *panicArt = "   ____________    _______________________________\n"
 "  /            \\   |                              |\n"
 " /              \\  / Whoops! Kernel died...       |\n"
 " |    `|    `|  | /_______________________________|\n"
@@ -26,7 +25,7 @@ char *panicArt = "   ____________    _______________________________\n"
 
 extern "C" void yield();
 
-extern "C" void kernelPanic(char *errorMsg) {
+extern "C" void kernelPanic(const char *errorMsg) {
     kprintf(NONE, "[ " ANSI_RED  "KERNEL PANIC!" ANSI_RESET "] Reason: ");
 
     if (errorMsg == nullptr) {
@@ -56,7 +55,6 @@ extern "C" void syscallHandler() {
 
 extern "C" void timerHandler() {
     apicWrite(0xb0, 0);
-    yield();
 }
 
 extern "C" void irqHandler() {
