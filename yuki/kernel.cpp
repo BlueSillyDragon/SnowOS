@@ -1,3 +1,5 @@
+#include "inc/sys/panic.hpp"
+#include "uacpi/status.h"
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
@@ -133,12 +135,7 @@ uint32_t testColor = 0x23272E;
 
 uint64_t rsdp;
 
-
 void *threadA(void *args);
-void *threadB(void *args);
-void *threadC(void *args);
-void *threadD(void *args);
-void *threadE(void *args);
 
 extern "C" void kernelMain()
 {
@@ -191,8 +188,14 @@ extern "C" void kernelMain()
 
     uacpi_status ret = uacpi_setup_early_table_access(tempBuffer, 0x1000);
 
+    if (ret != UACPI_STATUS_OK) {
+        kernelPanic("Issue Occured getting initializing ACPI tables!");
+    }
+
     enableHpet();
     enableLapicTimer();
+
+    int rc = newProcess(threadA);
 
     kprintf(YUKI, "Done!\n");
 
@@ -200,6 +203,19 @@ extern "C" void kernelMain()
     hcf();
 }
 
+void *threadA(void *args) {
+    bool myBool = true;
+    while (myBool) {
+        __asm__ __volatile__ ("mov $0xcafebabe, %rax; cli");
+        hcf();
+    }
+    return nullptr;
+}
+
 uint64_t getHhdm() {
     return hhdm;
+}
+
+uint64_t getRsdp() {
+    return rsdp;
 }

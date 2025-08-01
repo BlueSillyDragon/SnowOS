@@ -1,14 +1,15 @@
 #include "uacpi/log.h"
 #include <cstdarg>
 #include <cstdint>
+#include <inc/utils/helpers.hpp>
 #include <inc/io/kprintf.hpp>
 #include <uacpi/kernel_api.h>
 #include <uacpi/status.h>
 #include <inc/mm/vmm.hpp>
 
-extern "C" uint64_t rsdp;
-
 uacpi_status uacpi_kernel_get_rsdp(uacpi_phys_addr *out_rsdp_address) {
+    uint64_t rsdp = getRsdp();
+
     if (rsdp == 0) {
         kprintf(ERROR, "RSDP could not be retrieved!\n");
         return UACPI_STATUS_INTERNAL_ERROR;

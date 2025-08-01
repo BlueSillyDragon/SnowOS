@@ -3,6 +3,7 @@
 #include <inc/io/kprintf.hpp>
 #include <inc/sys/apic.hpp>
 #include <inc/sys/spinlock.hpp>
+#include <inc/sched/scheduler.hpp>
 
 const char *panicArt = "   ____________    _______________________________\n"
 "  /            \\   |                              |\n"
@@ -55,6 +56,7 @@ extern "C" void syscallHandler() {
 
 extern "C" void timerHandler() {
     apicWrite(0xb0, 0);
+    schedule();
 }
 
 extern "C" void irqHandler() {
