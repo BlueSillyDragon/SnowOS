@@ -35,8 +35,11 @@ Then run get-deps
 This will get C and C++ freestanding headers, as well as limine.h for the kernel
 
 ### Step 4: Run CMake
-
-First, you'll need to create a build dir (ensure this is in the root of the project directory), call it whatever you want, I'll call mine build here
+Ensure this is in the root of the project directory, if not, run:
+```
+cd ..
+```
+You'll need to create a build dir  call it whatever you want, I'll call mine build here
 ```
 mkdir build
 ```
