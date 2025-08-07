@@ -18,7 +18,7 @@ You'll need to install the needed tools to be able to build SnowOS if you don't 
 ```
 sudo apt install cmake clang ninja-build lld llvm nasm
 ```
-Also install qemu and ovmf for running SnowOS, you can skip this if you're going to use a different VM though (eg. VirtualBox)
+Also install `qemu-system-x86-64` and `ovmf` (it could be `edk2-ovmf` for some distros) for running SnowOS, you can skip this if you're going to use a different VM though (eg. VirtualBox)
 > [!WARNING]
 > I can't guarantee that SnowOS will run on VirtualBox, but feel free to try
 
@@ -62,9 +62,11 @@ Simply cd back into the root folder, and run image.sh
 cd ../
 ./image.sh
 ```
-This should generate an image file called SnowOS.img, then you can just run it normallu (recommended command: qemu-system-x86_64 --enable-kvm -M q35 -m 4G -bios /usr/share/ovmf/OVMF.fd -serial stdio -hda SnowOS.img)
-
-Now when you run SnowOS, you should be booted into the kernel.
+This should generate an image file called SnowOS.img, then you can just run it with QEMU: 
+```
+qemu-system-x86_64 --enable-kvm -M q35 -m 4G -bios /usr/share/ovmf/OVMF.fd -serial stdio -hda SnowOS.img
+```
+Now when you run SnowOS, you should be booted into the kernel!
 
 ## Technologies
 Uses tinyubsan by rdmsr, Limine is the bootloader (will eventually swap back in with SnowBoot once I'm more confident in SnowBoot's abilities lol), Flanterm for a terminal emulator, and uACPI for ACPI stuff.
