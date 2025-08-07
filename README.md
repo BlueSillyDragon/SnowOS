@@ -19,7 +19,7 @@ You'll need to install the needed tools to be able to build SnowOS if you don't 
 sudo apt install cmake clang ninja-build lld llvm nasm
 ```
 Also install `qemu-system-x86-64` and `ovmf` (it could be `edk2-ovmf` for some distros) for running SnowOS, you can skip this if you're going to use a different VM though (eg. VirtualBox)
-> [!WARNING]
+> [!NOTE]
 > I can't guarantee that SnowOS will run on VirtualBox, but feel free to try
 
 ### Step 3: Run get-deps
