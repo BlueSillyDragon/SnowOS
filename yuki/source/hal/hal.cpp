@@ -19,6 +19,11 @@ size_t strlen(const char *string) {
     return length;
 }
 
+extern "C" void ReloadSegments();
+
+GDT Gdt {0, KERNEL_CS, KERNEL_DS, USER_CS, USER_DS};
+GDTR GdtRegister;
+
 void HalInit(limine_framebuffer* Framebuffer)
 {
     FtCtx = flanterm_fb_init(
@@ -41,4 +46,15 @@ void HalInit(limine_framebuffer* Framebuffer)
 void HalPrintString(const char* String)
 {
     flanterm_write(FtCtx, String, strlen(String));
+}
+
+void HalInitGdt()
+{
+    GdtRegister.Base = reinterpret_cast<uint64_t>(&Gdt);
+    GdtRegister.Limit = (sizeof(Gdt) - 1);
+
+    __asm__ volatile ("lgdt %0" :: "m"(GdtRegister));
+    ReloadSegments();
+
+    HalPrintString("[Hal] GDT Initialized!\n");
 }

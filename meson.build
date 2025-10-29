@@ -1,7 +1,7 @@
 project(
     'SnowOS',
-    'cpp', 'c',
-    meson_version: '>=0.60.0',
+    'cpp', 'c', 'nasm',
+    meson_version: '>=0.64.0',
     default_options: [
         'c_std=gnu23',
         'cpp_std=c++23',

@@ -191,7 +191,8 @@ extern "C" void KeMain() {
     }
 
     HalInit(Framebuffer);
-    HalPrintString("SnowOS has booted!");
+    HalPrintString("SnowOS has booted!\n");
+    HalInitGdt();
 
     // We're done, just hang...
     hcf();

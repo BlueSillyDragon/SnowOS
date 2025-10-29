@@ -8,6 +8,7 @@
 common/include/freestnd-c-hdrs
 common/include/freestnd-cxx-hdrs
 common/cc-runtime
-builddir
+build
 iso_root
 .deps-obtained
+.cache

@@ -9,6 +9,7 @@ incdirs = include_directories(
 sources = files(
     'source/ke/kernel.cpp',
     'source/hal/hal.cpp',
+    'source/hal/gdt.asm',
     'source/hal/flanterm/src/flanterm.c',
     'source/hal/flanterm/src/flanterm_backends/fb.c',
 )
@@ -36,6 +37,12 @@ add_project_arguments(
     '-MP',
 
     language: 'cpp'
+)
+
+add_project_arguments(
+    '-fwin64',
+
+    language: 'nasm'
 )
 
 add_project_link_arguments(

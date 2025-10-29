@@ -10,6 +10,7 @@ If you don't already have the source code, you'll have to clone it using the fol
 ```
 git clone https://github.com/BlueSillyDragon/SnowOS.git
 cd SnowOS
+git submodule init
 git submodule update
 ```
 
@@ -37,16 +38,21 @@ This will get the C and C++ freestanding headers.
 Ensure this is in the root of the project directory, and run the following command:
 
 ```
-meson setup --cross-file x86_64-pe.cross-file builddir
+meson setup --cross-file x86_64-pe.cross-file build
 ```
-This will setup Meson and create the builddir directory, now run:
+This will setup Meson and create the build directory, now run:
 ```
-meson compile -C builddir
+meson compile -C build
 ```
 
 ### Step 5: Run SnowOS
 
 Now all you have to do is build the image file and run SnowOS under QEMU (or your VM of choice, just remember that you need to configure the VM settings to use UEFI).
+
+Before running image.sh, make sure to build Limine like so:
+```
+make -C Limine
+```
 
 Now you can just run image.sh:
 ```
