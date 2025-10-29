@@ -1,0 +1,7 @@
+[submodule "Limine"]
+	path = Limine
+	url = https://codeberg.org/Limine/Limine
+	branch = v10.x-binary
+[submodule "yuki/source/hal/flanterm"]
+	path = yuki/source/hal/flanterm
+	url = https://codeberg.org/mintsuki/flanterm.git
