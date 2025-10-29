@@ -8,8 +8,10 @@ incdirs = include_directories(
 
 sources = files(
     'source/ke/kernel.cpp',
+    'source/ke/interrupts.cpp',
     'source/hal/hal.cpp',
     'source/hal/gdt.asm',
+    'source/hal/isr.asm',
     'source/hal/flanterm/src/flanterm.c',
     'source/hal/flanterm/src/flanterm_backends/fb.c',
 )

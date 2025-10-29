@@ -20,9 +20,25 @@ size_t strlen(const char *string) {
 }
 
 extern "C" void ReloadSegments();
+extern "C" void* IsrStubTable[];
 
 GDT Gdt {0, KERNEL_CS, KERNEL_DS, USER_CS, USER_DS};
-GDTR GdtRegister;
+DTR GdtRegister;
+
+IDTENTRY Idt[256];
+DTR Idtr;
+
+void HalIdtSetDescriptor(uint8_t Vector, void* Isr, uint8_t Flags) {
+    IDTENTRY* Descriptor = &Idt[Vector];
+
+    Descriptor->IsrLow              = (uint64_t)Isr & 0xFFFF;
+    Descriptor->SegmentSelector     = 0x08;
+    Descriptor->Ist                 = 0;
+    Descriptor->Attributes          = Flags;
+    Descriptor->IsrMid              = ((uint64_t)Isr >> 16) & 0xFFFF;
+    Descriptor->IsrHigh             = ((uint64_t)Isr >> 32) & 0xFFFFFFFF;
+    Descriptor->Reserved            = 0;
+}
 
 void HalInit(limine_framebuffer* Framebuffer)
 {
@@ -48,8 +64,9 @@ void HalPrintString(const char* String)
     flanterm_write(FtCtx, String, strlen(String));
 }
 
-void HalInitGdt()
+void HalInitCpu()
 {
+    // Setup the GDT
     GdtRegister.Base = reinterpret_cast<uint64_t>(&Gdt);
     GdtRegister.Limit = (sizeof(Gdt) - 1);
 
@@ -57,4 +74,16 @@ void HalInitGdt()
     ReloadSegments();
 
     HalPrintString("[Hal] GDT Initialized!\n");
+
+    // Setup the IDT
+    Idtr.Base = (uint64_t)&Idt;
+    Idtr.Limit = (uint16_t)sizeof(IDTENTRY) * 256 - 1;
+
+    for(int i = 0; i < 40; i++)
+    {
+        HalIdtSetDescriptor(i, IsrStubTable[i], 0x8e);
+    }
+
+    __asm__ volatile ("lidt %0" :: "m"(Idtr));
+    HalPrintString("[Hal] IDT Initialized!\n");
 }

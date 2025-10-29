@@ -12,7 +12,7 @@ typedef struct
 {
     uint16_t Limit;
     uint64_t Base;
-} __attribute__((packed)) GDTR;
+} __attribute__((packed)) DTR; // Descriptor Table Register
 
 typedef struct
 {
@@ -23,6 +23,17 @@ typedef struct
     uint64_t UserData;
 } __attribute__((packed)) GDT;
 
+typedef struct
+{
+    uint16_t IsrLow;
+    uint16_t SegmentSelector;
+    uint8_t Ist;
+    uint8_t Attributes;
+    uint16_t IsrMid;
+    uint32_t IsrHigh;
+    uint32_t Reserved;
+} __attribute__((packed)) IDTENTRY;
+
 void HalInit(limine_framebuffer* Framebuffer);
 void HalPrintString(const char* String);
-void HalInitGdt();
+void HalInitCpu();

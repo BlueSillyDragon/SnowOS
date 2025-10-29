@@ -147,20 +147,6 @@ extern "C" void KeRunConstructors() {
 	}
 }
 
-class Test
-{
-    public:
-        Test()
-        {
-            x = 12;
-            __asm__ volatile ("mov $0xcafebabe, %rcx");
-        }
-    private:
-        int x;
-};
-
-Test testObj;
-
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
@@ -168,7 +154,6 @@ Test testObj;
 extern "C" void KeMain() {
     // Ensure the bootloader actually understands our base revision (see spec).
     if (LIMINE_BASE_REVISION_SUPPORTED == false) {
-        __asm__ volatile ("mov $0xcafebabe, %rax");
         hcf();
     }
 
@@ -177,22 +162,18 @@ extern "C" void KeMain() {
     // Ensure we got a framebuffer.
     if (framebuffer_request.response == nullptr
      || framebuffer_request.response->framebuffer_count < 1) {
-        __asm__ volatile ("mov $0xdeadbeef, %rbx");
         hcf();
     }
 
     // Fetch the first framebuffer.
     limine_framebuffer *Framebuffer = framebuffer_request.response->framebuffers[0];
 
-    // Note: we assume the framebuffer model is RGB with 32-bit pixels.
-    for (std::size_t i = 0; i < 100; i++) {
-        volatile std::uint32_t *fb_ptr = static_cast<volatile std::uint32_t *>(Framebuffer->address);
-        fb_ptr[i * (Framebuffer->pitch / 4) + i] = 0xffffff;
-    }
-
     HalInit(Framebuffer);
     HalPrintString("SnowOS has booted!\n");
-    HalInitGdt();
+    HalInitCpu();
+
+    // Cause an exception
+    __asm__ volatile ("xor %rax, %rax; xor %rbx, %rbx; div %rbx");
 
     // We're done, just hang...
     hcf();
