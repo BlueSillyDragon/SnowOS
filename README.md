@@ -81,6 +81,7 @@ Also be sure to enable UEFI (this can be done via the VBox GUI though), and now 
 
 ## Credit
 The Limine Bootloader, as well as flanterm, is maintained by mintsuki.
+Nanoprintf is by charlesnicholson.
 
 ## License
 SnowOS is under an BSD 3-Clause License.

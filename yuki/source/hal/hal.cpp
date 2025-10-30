@@ -1,8 +1,24 @@
+/**
+Snow Operating System
+Copyright (c) BlueSillyDragon 2025
+ 
+File: hal/hal.cpp
+
+Description:
+This file is the main source file of
+Hardware Abstraction Layer module of Yuki
+
+Author:
+BlueSillyDragon
+October 28th 2025
+**/
+
 #include <cstdint>
 #include <cstddef>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 #include <hal/hal.hpp>
+#include <ke/print.hpp>
 
 struct flanterm_context* FtCtx;
 
@@ -73,7 +89,7 @@ void HalInitCpu()
     __asm__ volatile ("lgdt %0" :: "m"(GdtRegister));
     ReloadSegments();
 
-    HalPrintString("[Hal] GDT Initialized!\n");
+    KePrint(LOG_TYPE::HalLog, "GDT Initialized!\n");
 
     // Setup the IDT
     Idtr.Base = (uint64_t)&Idt;
@@ -85,5 +101,5 @@ void HalInitCpu()
     }
 
     __asm__ volatile ("lidt %0" :: "m"(Idtr));
-    HalPrintString("[Hal] IDT Initialized!\n");
+    KePrint(LOG_TYPE::HalLog, "IDT Initialized!\n");
 }

@@ -9,6 +9,8 @@ incdirs = include_directories(
 sources = files(
     'source/ke/kernel.cpp',
     'source/ke/interrupts.cpp',
+    'source/ke/string.cpp',
+    'source/ke/print.cpp',
     'source/hal/hal.cpp',
     'source/hal/gdt.asm',
     'source/hal/isr.asm',

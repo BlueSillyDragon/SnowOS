@@ -1,3 +1,18 @@
+;
+;Snow Operating System
+;Copyright (c) BlueSillyDragon 2025
+ 
+;File: hal/gdt.asm
+
+;Description:
+;This file holds the ReloadSegments
+;Subrountine for GDT initialization
+
+;Author:
+;BlueSillyDragon
+;October 28th 2025
+;
+
 global ReloadSegments
 
 section .text

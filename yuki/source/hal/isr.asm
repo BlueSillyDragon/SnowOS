@@ -1,3 +1,18 @@
+;
+;Snow Operating System
+;Copyright (c) BlueSillyDragon 2025
+ 
+;File: hal/isr.asm
+
+;Description:
+;This file holds the ISR Stubs for the
+;Interrupt Descriptor Table
+
+;Author:
+;BlueSillyDragon
+;October 28th 2025
+;
+
 %macro IsrErrorStub 1
 ISR_STUB_%+%1:
     push rax

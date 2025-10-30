@@ -1,7 +1,27 @@
+/**
+Snow Operating System
+Copyright (c) BlueSillyDragon 2025
+ 
+File: ke/kernel.cpp
+
+Description:
+This file is the core source file of
+the Ke module of Yuki
+
+Author:
+BlueSillyDragon
+October 28th 2025
+**/
+
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
 #include <hal/hal.hpp>
+#include <ke/print.hpp>
+
+#define YUKI_VERSION_MAJOR 0
+#define YUKI_VERSION_MINOR 1
+#define YUKI_VERSION_PATCH 0
 
 // Set the base revision to 4, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -40,67 +60,6 @@ volatile LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end")))
 volatile LIMINE_REQUESTS_END_MARKER;
-
-}
-
-// GCC and Clang reserve the right to generate calls to the following
-// 4 functions even if they are not directly called.
-// Implement them as the C specification mandates.
-// DO NOT remove or rename these functions, or stuff will eventually break!
-// They CAN be moved to a different .cpp file.
-
-extern "C" {
-
-void *memcpy(void *__restrict dest, const void *__restrict src, std::size_t n) {
-    std::uint8_t *__restrict pdest = static_cast<std::uint8_t *__restrict>(dest);
-    const std::uint8_t *__restrict psrc = static_cast<const std::uint8_t *__restrict>(src);
-
-    for (std::size_t i = 0; i < n; i++) {
-        pdest[i] = psrc[i];
-    }
-
-    return dest;
-}
-
-void *memset(void *s, int c, std::size_t n) {
-    std::uint8_t *p = static_cast<std::uint8_t *>(s);
-
-    for (std::size_t i = 0; i < n; i++) {
-        p[i] = static_cast<uint8_t>(c);
-    }
-
-    return s;
-}
-
-void *memmove(void *dest, const void *src, std::size_t n) {
-    std::uint8_t *pdest = static_cast<std::uint8_t *>(dest);
-    const std::uint8_t *psrc = static_cast<const std::uint8_t *>(src);
-
-    if (src > dest) {
-        for (std::size_t i = 0; i < n; i++) {
-            pdest[i] = psrc[i];
-        }
-    } else if (src < dest) {
-        for (std::size_t i = n; i > 0; i--) {
-            pdest[i-1] = psrc[i-1];
-        }
-    }
-
-    return dest;
-}
-
-int memcmp(const void *s1, const void *s2, std::size_t n) {
-    const std::uint8_t *p1 = static_cast<const std::uint8_t *>(s1);
-    const std::uint8_t *p2 = static_cast<const std::uint8_t *>(s2);
-
-    for (std::size_t i = 0; i < n; i++) {
-        if (p1[i] != p2[i]) {
-            return p1[i] < p2[i] ? -1 : 1;
-        }
-    }
-
-    return 0;
-}
 
 }
 
@@ -169,8 +128,12 @@ extern "C" void KeMain() {
     limine_framebuffer *Framebuffer = framebuffer_request.response->framebuffers[0];
 
     HalInit(Framebuffer);
-    HalPrintString("SnowOS has booted!\n");
+    HalPrintString("Snow Operating System (c) 2025 BlueSillyDragon\n");
+    KePrint(LOG_TYPE::None, "Yuki Kernel Version %d.%d.%d\n\n", YUKI_VERSION_MAJOR, YUKI_VERSION_MINOR, YUKI_VERSION_PATCH);
     HalInitCpu();
+
+    KePrint(LOG_TYPE::KeLog, "This is a test! :3\n");
+    KePrint(LOG_TYPE::KeLog, "Test: %d, %x, %c\n", 13, 0xcafebabe, 's');
 
     // Cause an exception
     __asm__ volatile ("xor %rax, %rax; xor %rbx, %rbx; div %rbx");

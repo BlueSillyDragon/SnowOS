@@ -1,3 +1,18 @@
+/**
+Snow Operating System
+Copyright (c) BlueSillyDragon 2025
+ 
+File: hal/hal.hpp
+
+Description:
+This file contain architecture specific
+structures and definitions for Hal
+
+Author:
+BlueSillyDragon
+October 28th 2025
+**/
+
 #pragma once
 
 #include <limine.h>
