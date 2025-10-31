@@ -49,6 +49,7 @@ typedef struct
     uint32_t Reserved;
 } __attribute__((packed)) IDTENTRY;
 
-void HalInit(limine_framebuffer* Framebuffer);
+void HalInit();
 void HalPrintString(const char* String);
+void HalHaltCpu();
 void HalInitCpu();

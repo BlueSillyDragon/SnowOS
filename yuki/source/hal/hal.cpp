@@ -15,10 +15,53 @@ October 28th 2025
 
 #include <cstdint>
 #include <cstddef>
+#include <limine.h>
 #include <flanterm.h>
 #include <flanterm_backends/fb.h>
 #include <hal/hal.hpp>
 #include <ke/print.hpp>
+
+// Limine Stuff
+
+// Set the base revision to 4, this is recommended as this is the latest
+// base revision described by the Limine boot protocol specification.
+// See specification for further info.
+
+namespace {
+
+__attribute__((used, section(".limine_requests")))
+volatile LIMINE_BASE_REVISION(4);
+
+}
+
+// The Limine requests can be placed anywhere, but it is important that
+// the compiler does not optimise them away, so, usually, they should
+// be made volatile or equivalent, _and_ they should be accessed at least
+// once or marked as used with the "used" attribute as done here.
+
+namespace {
+
+__attribute__((used, section(".limine_requests")))
+volatile limine_framebuffer_request framebuffer_request = {
+    .id = LIMINE_FRAMEBUFFER_REQUEST,
+    .revision = 0,
+    .response = nullptr
+};
+
+}
+
+// Finally, define the start and end markers for the Limine requests.
+// These can also be moved anywhere, to any .cpp file, as seen fit.
+
+namespace {
+
+__attribute__((used, section(".limine_requests_start")))
+volatile LIMINE_REQUESTS_START_MARKER;
+
+__attribute__((used, section(".limine_requests_end")))
+volatile LIMINE_REQUESTS_END_MARKER;
+
+}
 
 struct flanterm_context* FtCtx;
 
@@ -44,6 +87,19 @@ DTR GdtRegister;
 IDTENTRY Idt[256];
 DTR Idtr;
 
+limine_framebuffer *Framebuffer;
+
+// The following stubs are required by the Itanium C++ ABI (the one we use,
+// regardless of the "Itanium" nomenclature).
+// Like the memory functions above, these stubs can be moved to a different .cpp file,
+// but should not be removed, unless you know what you are doing.
+extern "C" {
+    int __cxa_atexit(void (*)(void *), void *, void *) { return 0; }
+    void __cxa_pure_virtual() { HalHaltCpu(); }
+    void *__dso_handle;
+}
+
+
 void HalIdtSetDescriptor(uint8_t Vector, void* Isr, uint8_t Flags) {
     IDTENTRY* Descriptor = &Idt[Vector];
 
@@ -56,8 +112,22 @@ void HalIdtSetDescriptor(uint8_t Vector, void* Isr, uint8_t Flags) {
     Descriptor->Reserved            = 0;
 }
 
-void HalInit(limine_framebuffer* Framebuffer)
+void HalInit()
 {
+    // Ensure the bootloader actually understands our base revision (see spec).
+    if (LIMINE_BASE_REVISION_SUPPORTED == false) {
+        HalHaltCpu();
+    }
+
+    // Ensure we got a framebuffer.
+    if (framebuffer_request.response == nullptr
+     || framebuffer_request.response->framebuffer_count < 1) {
+        HalHaltCpu();
+    }
+
+    // Fetch the first framebuffer.
+    Framebuffer = framebuffer_request.response->framebuffers[0];
+
     FtCtx = flanterm_fb_init(
         NULL,
         NULL,
@@ -78,6 +148,14 @@ void HalInit(limine_framebuffer* Framebuffer)
 void HalPrintString(const char* String)
 {
     flanterm_write(FtCtx, String, strlen(String));
+}
+
+void HalHaltCpu()
+{
+    for (;;)
+    {
+        __asm__ volatile ("hlt");
+    }
 }
 
 void HalInitCpu()

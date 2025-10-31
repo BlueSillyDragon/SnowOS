@@ -22,73 +22,6 @@ October 28th 2025
 #define YUKI_VERSION_MINOR 1
 #define YUKI_VERSION_PATCH 0
 
-// Set the base revision to 4, this is recommended as this is the latest
-// base revision described by the Limine boot protocol specification.
-// See specification for further info.
-
-namespace {
-
-__attribute__((used, section(".limine_requests")))
-volatile LIMINE_BASE_REVISION(4);
-
-}
-
-// The Limine requests can be placed anywhere, but it is important that
-// the compiler does not optimise them away, so, usually, they should
-// be made volatile or equivalent, _and_ they should be accessed at least
-// once or marked as used with the "used" attribute as done here.
-
-namespace {
-
-__attribute__((used, section(".limine_requests")))
-volatile limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
-    .revision = 0,
-    .response = nullptr
-};
-
-}
-
-// Finally, define the start and end markers for the Limine requests.
-// These can also be moved anywhere, to any .cpp file, as seen fit.
-
-namespace {
-
-__attribute__((used, section(".limine_requests_start")))
-volatile LIMINE_REQUESTS_START_MARKER;
-
-__attribute__((used, section(".limine_requests_end")))
-volatile LIMINE_REQUESTS_END_MARKER;
-
-}
-
-// Halt and catch fire function.
-namespace {
-
-void hcf() {
-    for (;;) {
-#if defined (__x86_64__)
-        asm ("hlt");
-#elif defined (__aarch64__) || defined (__riscv)
-        asm ("wfi");
-#elif defined (__loongarch64)
-        asm ("idle 0");
-#endif
-    }
-}
-
-}
-
-// The following stubs are required by the Itanium C++ ABI (the one we use,
-// regardless of the "Itanium" nomenclature).
-// Like the memory functions above, these stubs can be moved to a different .cpp file,
-// but should not be removed, unless you know what you are doing.
-extern "C" {
-    int __cxa_atexit(void (*)(void *), void *, void *) { return 0; }
-    void __cxa_pure_virtual() { hcf(); }
-    void *__dso_handle;
-}
-
 // MSVC puts global constructors in a section .CRT$XCU that is ordered between .CRT$XCA and
 // .CRT$XCZ.
 // This is taken from managarm, thank you :3
@@ -109,26 +42,24 @@ extern "C" void KeRunConstructors() {
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
 
-extern "C" void KeMain() {
-    // Ensure the bootloader actually understands our base revision (see spec).
-    if (LIMINE_BASE_REVISION_SUPPORTED == false) {
-        hcf();
-    }
-
+extern "C" void KeMain(void* SnowBootInfo)
+{
     KeRunConstructors();
 
-    // Ensure we got a framebuffer.
-    if (framebuffer_request.response == nullptr
-     || framebuffer_request.response->framebuffer_count < 1) {
-        hcf();
+    HalInit();
+    HalPrintString("Snow Operating System (c) 2025 BlueSillyDragon\n");
+    KePrint(LOG_TYPE::None, "Yuki Kernel Version %d.%d.%d\n", YUKI_VERSION_MAJOR, YUKI_VERSION_MINOR, YUKI_VERSION_PATCH);
+    KePrint(LOG_TYPE::None, "Booted by: ");
+    
+    if (SnowBootInfo == nullptr)
+    {
+        KePrint(LOG_TYPE::None, "Limine\n\n");
+    }
+    else
+    {
+        KePrint(LOG_TYPE::None, "SnowBoot\n");
     }
 
-    // Fetch the first framebuffer.
-    limine_framebuffer *Framebuffer = framebuffer_request.response->framebuffers[0];
-
-    HalInit(Framebuffer);
-    HalPrintString("Snow Operating System (c) 2025 BlueSillyDragon\n");
-    KePrint(LOG_TYPE::None, "Yuki Kernel Version %d.%d.%d\n\n", YUKI_VERSION_MAJOR, YUKI_VERSION_MINOR, YUKI_VERSION_PATCH);
     HalInitCpu();
 
     KePrint(LOG_TYPE::KeLog, "This is a test! :3\n");
@@ -138,5 +69,5 @@ extern "C" void KeMain() {
     __asm__ volatile ("mov $0xcafebabe, %rcx; mov $0xdeadbeef, %rdx; xor %rax, %rax; xor %rbx, %rbx; div %rbx");
 
     // We're done, just hang...
-    hcf();
+    HalInitCpu();
 }
