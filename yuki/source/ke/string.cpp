@@ -15,6 +15,7 @@ October 30th 2025
 **/
 
 #include <cstddef>
+#include <cstdint>
 #include <ke/string.hpp>
 
 extern "C" {

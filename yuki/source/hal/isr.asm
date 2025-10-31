@@ -15,10 +15,12 @@
 
 %macro IsrErrorStub 1
 ISR_STUB_%+%1:
+    push %1
     push rax
     push rbx
     push rcx
     push rdx
+    mov rcx, rsp
     call KeInterruptHandler
     pop rdx
     pop rcx
@@ -29,10 +31,13 @@ ISR_STUB_%+%1:
 
 %macro IsrNoErrorStub 1
 ISR_STUB_%+%1:
+    push 0x0
+    push %1
     push rax
     push rbx
     push rcx
     push rdx
+    mov rcx, rsp
     call KeInterruptHandler
     pop rdx
     pop rcx

@@ -17,7 +17,6 @@ October 30th 2025
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 
 extern "C" void *memcpy(void *__restrict dest, const void *__restrict src, std::size_t n);
 extern "C" void *memset(void *s, int c, std::size_t n);

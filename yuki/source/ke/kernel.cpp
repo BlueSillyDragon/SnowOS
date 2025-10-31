@@ -14,7 +14,6 @@ October 28th 2025
 **/
 
 #include <cstdint>
-#include <cstddef>
 #include <limine.h>
 #include <hal/hal.hpp>
 #include <ke/print.hpp>
@@ -136,7 +135,7 @@ extern "C" void KeMain() {
     KePrint(LOG_TYPE::KeLog, "Test: %d, %x, %c\n", 13, 0xcafebabe, 's');
 
     // Cause an exception
-    __asm__ volatile ("xor %rax, %rax; xor %rbx, %rbx; div %rbx");
+    __asm__ volatile ("mov $0xcafebabe, %rcx; mov $0xdeadbeef, %rdx; xor %rax, %rax; xor %rbx, %rbx; div %rbx");
 
     // We're done, just hang...
     hcf();
